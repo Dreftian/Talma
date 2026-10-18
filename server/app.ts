@@ -135,6 +135,7 @@ api.post('/upload', async (c) => {
     });
 
     if (!uploadRes.ok) {
+      const initialStatus = uploadRes.status;
       const errJson = await uploadRes.json().catch(() => ({}));
       // If bucket does not exist, create bucket and retry
       if (uploadRes.status === 404 || errJson.message?.includes('Bucket')) {
@@ -168,7 +169,13 @@ api.post('/upload', async (c) => {
       if (!uploadRes.ok) {
         const retryErr = await uploadRes.json().catch(() => ({}));
         console.error('Supabase upload error:', retryErr);
-        return c.json({ error: retryErr.message || 'Error subiendo archivo a Supabase' }, 500);
+        return c.json({
+          error: retryErr.message || retryErr.error || 'Error subiendo archivo a Supabase',
+          upstreamStatus: uploadRes.status,
+          upstreamBody: retryErr,
+          initialStatus: initialStatus,
+          initialBody: errJson,
+        }, 500);
       }
     }
 
