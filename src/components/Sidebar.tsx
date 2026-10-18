@@ -5,10 +5,7 @@ import {
   Bell,
   MessageCircle,
   Phone,
-  Compass,
   Bookmark,
-  Sparkles,
-  Award,
   User,
   MoreHorizontal,
   Feather,
@@ -71,10 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: 3 },
     { id: 'messages', label: 'Chat', icon: MessageCircle, badge: 1 },
     { id: 'calls', label: 'Llamadas', icon: Phone },
-    { id: 'grok', label: 'Grok', icon: Compass, isGrok: true },
     { id: 'bookmarks', label: 'Historia', icon: Bookmark },
-    { id: 'creator_studio', label: 'Estudio para cre...', icon: Sparkles },
-    { id: 'premium', label: 'Premium', icon: Award },
     { id: 'profile', label: 'Perfil', icon: User },
   ];
 
@@ -116,31 +110,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <div className="relative flex items-center justify-center">
-                  {item.isGrok ? (
-                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 group-hover:bg-white/20 transition-colors">
-                      <Compass className="w-5 h-5 text-white" />
-                      <span className="hidden xl:inline text-[15px] font-bold">Grok</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Icon
-                        className={`w-6 h-6 transition-transform group-hover:scale-105 ${
-                          isActive ? 'text-white stroke-[2.6]' : 'text-[#e7e9ea]'
-                        }`}
-                      />
-                      {item.badge && item.badge > 0 && (
-                        <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-black">
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
+                  <Icon
+                    className={`w-6 h-6 transition-transform group-hover:scale-105 ${
+                      isActive ? 'text-white stroke-[2.6]' : 'text-[#e7e9ea]'
+                    }`}
+                  />
+                  {item.badge && item.badge > 0 && (
+                    <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-black">
+                      {item.badge}
+                    </span>
                   )}
                 </div>
-                {!item.isGrok && (
-                  <span className="hidden xl:inline text-[19px] tracking-tight leading-6">
-                    {item.label}
-                  </span>
-                )}
+                <span className="hidden xl:inline text-[19px] tracking-tight leading-6">
+                  {item.label}
+                </span>
               </button>
             );
           })}
