@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase';
+import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase.ts';
 
 const DB_PATH = path.resolve(process.cwd(), 'data', 'talma_db.json');
 

@@ -1,5 +1,5 @@
 import { getRequestListener } from '@hono/node-server';
-import app from '../server/app';
+import app from '../server/app.ts';
 
 const nodeListener = getRequestListener(app.fetch);
 

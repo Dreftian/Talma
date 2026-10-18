@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { db } from './db';
-import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase';
+import { db } from './db.ts';
+import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase.ts';
 
 const app = new Hono();
 
