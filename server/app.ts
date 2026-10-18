@@ -150,7 +150,7 @@ api.post('/upload', async (c) => {
 
     if (error) {
       console.error('Supabase upload error:', error);
-      return c.json({ error: error.message }, 500);
+      return c.json({ error: error.message, errorObj: error, at: 'uploadStep' }, 500);
     }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${fileName}`;
@@ -164,7 +164,7 @@ api.post('/upload', async (c) => {
     });
   } catch (err: any) {
     console.error('Error in /api/upload:', err);
-    return c.json({ error: err.message || 'Error procesando la subida' }, 500);
+    return c.json({ error: err.message || 'Error procesando la subida', stack: err.stack, at: 'topCatch' }, 500);
   }
 });
 
