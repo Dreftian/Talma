@@ -158,7 +158,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                           {user.display_name}
                         </span>
                         {user.is_verified && (
-                          <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
                         )}
                       </div>
                       <span className="text-[13px] text-[#71767b] truncate">

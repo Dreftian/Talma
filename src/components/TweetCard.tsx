@@ -102,7 +102,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="text-[#22c55e] hover:underline cursor-pointer"
+            className="text-[#1d9bf0] hover:underline cursor-pointer"
           >
             {part}
           </span>
@@ -116,7 +116,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
               e.stopPropagation();
               onSelectProfile?.(part.replace('@', ''));
             }}
-            className="text-[#22c55e] hover:underline cursor-pointer font-medium"
+            className="text-[#1d9bf0] hover:underline cursor-pointer font-medium"
           >
             {part}
           </span>
@@ -130,7 +130,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-[#22c55e] hover:underline cursor-pointer break-all"
+            className="text-[#1d9bf0] hover:underline cursor-pointer break-all"
           >
             {part}
           </a>
@@ -174,9 +174,14 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 <span className="font-bold text-[15px] text-[#e7e9ea] truncate">
                   {post.anonymous_name || 'Anónimo'}
                 </span>
-                <span className="text-[11px] bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                   🎭 Modo Anónimo
                 </span>
+                {post.is_extalmita && (
+                  <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    🌐 Extalmita
+                  </span>
+                )}
                 <span className="text-[14px] text-[#71767b]">@anonimo</span>
               </>
             ) : (
@@ -192,7 +197,13 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 </span>
 
                 {post.author.is_verified && (
-                  <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
+                )}
+
+                {post.is_extalmita && (
+                  <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    🌐 Extalmita
+                  </span>
                 )}
 
                 <span
@@ -221,7 +232,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1.5 text-[#71767b] hover:text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors"
+              className="p-1.5 text-[#71767b] hover:text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -361,7 +372,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
 
         {/* Copied toast notice */}
         {copied && (
-          <div className="absolute bottom-2 right-4 bg-[#22c55e] text-black text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+          <div className="absolute bottom-2 right-4 bg-[#1d9bf0] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             ¡Enlace copiado!
           </div>
         )}

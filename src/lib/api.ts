@@ -31,6 +31,7 @@ export async function createPost(data: {
   is_anonymous?: boolean;
   anonymous_name?: string;
   anonymous_avatar?: string;
+  is_extalmita?: boolean;
 }): Promise<Post> {
   const res = await fetch(`${API_BASE}/api/posts`, {
     method: 'POST',

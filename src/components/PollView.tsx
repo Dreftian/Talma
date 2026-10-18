@@ -40,7 +40,7 @@ export const PollView: React.FC<PollViewProps> = ({
                 {/* Percentage filled bar */}
                 <div
                   className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ${
-                    isSelected ? 'bg-[#22c55e]/30' : 'bg-[#71767b]/20'
+                    isSelected ? 'bg-[#1d9bf0]/30' : 'bg-[#71767b]/20'
                   }`}
                   style={{ width: `${percentage}%` }}
                 />
@@ -54,7 +54,7 @@ export const PollView: React.FC<PollViewProps> = ({
                     {option.text}
                   </span>
                   {isSelected && (
-                    <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black" />
                   )}
                 </div>
 
@@ -70,7 +70,7 @@ export const PollView: React.FC<PollViewProps> = ({
               key={option.id}
               disabled={disabled}
               onClick={() => onVote(option.id)}
-              className="w-full py-2.5 px-4 rounded-full border border-[#22c55e] hover:bg-[#22c55e]/10 text-[#22c55e] font-bold text-[15px] text-center transition-colors duration-150 active:scale-[0.99]"
+              className="w-full py-2.5 px-4 rounded-full border border-[#1d9bf0] hover:bg-[#1d9bf0]/10 text-[#1d9bf0] font-bold text-[15px] text-center transition-colors duration-150 active:scale-[0.99] cursor-pointer"
             >
               {option.text}
             </button>

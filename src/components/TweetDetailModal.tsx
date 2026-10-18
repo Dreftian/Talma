@@ -140,7 +140,7 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                   <span className="font-bold text-[16px] text-white">
                     {post.anonymous_name || 'Anónimo'}
                   </span>
-                  <span className="text-[11px] bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold">
                     🎭 Modo Anónimo
                   </span>
                 </div>
@@ -156,7 +156,7 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                     {post.author.display_name}
                   </span>
                   {post.author.is_verified && (
-                    <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
                   )}
                 </div>
                 <span
@@ -254,7 +254,7 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
       {/* Reply Composer */}
       <div className="border-b border-[#2f3336]">
         <div className="px-4 pt-2 text-xs text-[#71767b]">
-          Respondiendo a <span className="text-[#22c55e]">@{post.author.username}</span>
+          Respondiendo a <span className="text-[#1d9bf0]">@{post.author.username}</span>
         </div>
         <TweetComposer
           currentUser={currentUser}

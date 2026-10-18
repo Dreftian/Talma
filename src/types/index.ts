@@ -58,6 +58,7 @@ export interface Post {
   anonymous_name?: string;
   anonymous_avatar?: string;
   author_ip?: string;
+  is_extalmita?: boolean;
   likes_count: number;
   reposts_count: number;
   replies_count: number;

@@ -22,6 +22,7 @@ interface TweetComposerProps {
   replyToId?: string;
   placeholder?: string;
   compact?: boolean;
+  isExtalmita?: boolean;
 }
 
 const PRESET_GIFS = [
@@ -41,6 +42,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   replyToId,
   placeholder = '¿Qué está pasando?',
   compact = false,
+  isExtalmita = false,
 }) => {
   const [content, setContent] = useState('');
   const [mediaList, setMediaList] = useState<MediaAttachment[]>([]);
@@ -58,6 +60,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [anonymousName, setAnonymousName] = useState('Anónimo');
   const [showAnonymousNameInput, setShowAnonymousNameInput] = useState(false);
+  const [postToExtalmita, setPostToExtalmita] = useState(isExtalmita);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const gifInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,7 +71,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
 
-  const MAX_CHARS = 280;
+  const MAX_CHARS = 1000;
   const charsLeft = MAX_CHARS - content.length;
   const isOverLimit = charsLeft < 0;
   const canSubmit =
@@ -95,7 +98,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        setUploadStatus(`Subiendo ${file.name} a Supabase Storage...`);
+        setUploadStatus(`Subiendo ${file.name}...`);
         const uploaded = await uploadMedia(file);
         if (explicitType) {
           uploaded.type = explicitType;
@@ -104,7 +107,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
       }
     } catch (err: any) {
       console.error('Upload error:', err);
-      setErrorMessage('Error al subir archivo a Supabase Storage: ' + (err.message || 'Error de conexión'));
+      setErrorMessage('Error al subir archivo: ' + (err.message || 'Error de conexión'));
     } finally {
       setIsUploading(false);
       setUploadStatus('');
@@ -146,7 +149,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
         const audioFile = new File([audioBlob], `nota_voz_${Date.now()}.webm`, { type: 'audio/webm' });
 
         setIsUploading(true);
-        setUploadStatus('Subiendo nota de voz a Supabase Storage...');
+        setUploadStatus('Subiendo nota de voz...');
         try {
           const uploaded = await uploadMedia(audioFile);
           uploaded.type = 'audio';
@@ -217,6 +220,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
         is_anonymous: isAnonymous,
         anonymous_name: isAnonymous ? (anonymousName.trim() || 'Anónimo') : undefined,
         anonymous_avatar: isAnonymous ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' : undefined,
+        is_extalmita: Boolean(isExtalmita || postToExtalmita),
       });
 
       setContent('');
@@ -243,7 +247,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
       {isAnonymous ? (
         <div
           title="Modo Anónimo Activado"
-          className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border-2 border-[#22c55e] flex items-center justify-center text-lg shadow-md shrink-0 select-none animate-pulse"
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border-2 border-[#1d9bf0] flex items-center justify-center text-lg shadow-md shrink-0 select-none animate-pulse"
         >
           🎭
         </div>
@@ -256,12 +260,30 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Extalmita Active Banner */}
+        {postToExtalmita && (
+          <div className="flex items-center justify-between bg-[#1d9bf0]/10 border border-[#1d9bf0]/40 px-3 py-1.5 rounded-xl mb-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-base select-none">🌐</span>
+              <span className="text-[#1d9bf0] font-semibold">Publicando en Extalmita (Muro Comunitario Público)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPostToExtalmita(false)}
+              className="text-[#71767b] hover:text-white cursor-pointer ml-2"
+              title="Desactivar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Anonymous Mode Active Notification & Name Editor */}
         {isAnonymous && (
-          <div className="flex items-center justify-between bg-[#22c55e]/10 border border-[#22c55e]/40 px-3 py-1.5 rounded-xl mb-2 text-xs">
+          <div className="flex items-center justify-between bg-[#1d9bf0]/10 border border-[#1d9bf0]/40 px-3 py-1.5 rounded-xl mb-2 text-xs">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-base select-none">🎭</span>
-              <span className="text-[#22c55e] font-semibold">Modo Anónimo:</span>
+              <span className="text-[#1d9bf0] font-semibold">Modo Anónimo:</span>
               {showAnonymousNameInput ? (
                 <div className="flex items-center gap-1">
                   <input
@@ -274,12 +296,12 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') setShowAnonymousNameInput(false);
                     }}
-                    className="bg-black/90 border border-[#22c55e] text-white px-2 py-0.5 rounded text-xs outline-none w-36"
+                    className="bg-black/90 border border-[#1d9bf0] text-white px-2 py-0.5 rounded text-xs outline-none w-36"
                   />
                   <button
                     type="button"
                     onClick={() => setShowAnonymousNameInput(false)}
-                    className="bg-[#22c55e] text-black px-2 py-0.5 rounded text-[11px] font-bold"
+                    className="bg-[#1d9bf0] text-white px-2 py-0.5 rounded text-[11px] font-bold"
                   >
                     OK
                   </button>
@@ -307,7 +329,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
         )}
         {/* Audience Selector pill */}
         {!compact && (
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#22c55e] border border-[#2f3336] rounded-full px-3 py-1 w-fit mb-2 cursor-pointer hover:bg-[#22c55e]/10 transition-colors">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#1d9bf0] border border-[#2f3336] rounded-full px-3 py-1 w-fit mb-2 cursor-pointer hover:bg-[#1d9bf0]/10 transition-colors">
             <Globe className="w-3.5 h-3.5" />
             <span>Cualquiera puede responder</span>
           </div>
@@ -335,9 +357,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
 
         {/* Uploading progress indicator */}
         {isUploading && (
-          <div className="flex items-center gap-2 text-sm text-[#22c55e] py-2 bg-[#22c55e]/10 px-3 rounded-xl mt-2 border border-[#22c55e]/20">
+          <div className="flex items-center gap-2 text-sm text-[#1d9bf0] py-2 bg-[#1d9bf0]/10 px-3 rounded-xl mt-2 border border-[#1d9bf0]/20">
             <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-            <span className="font-medium truncate">{uploadStatus || 'Subiendo archivo a Supabase Storage...'}</span>
+            <span className="font-medium truncate">{uploadStatus || 'Subiendo archivo...'}</span>
           </div>
         )}
 
@@ -369,7 +391,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
           <div className="mt-3 p-3 bg-[#16181c] border border-[#2f3336] rounded-2xl animate-pop-in">
             <div className="flex items-center justify-between pb-2 border-b border-[#2f3336]">
               <span className="text-sm font-bold text-white flex items-center gap-2">
-                <span className="text-xs font-black border border-[#22c55e] text-[#22c55e] rounded px-1 py-0.5">GIF</span>
+                <span className="text-xs font-black border border-[#1d9bf0] text-[#1d9bf0] rounded px-1 py-0.5">GIF</span>
                 Selecciona o sube un GIF
               </span>
               <button
@@ -385,10 +407,10 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               <button
                 type="button"
                 onClick={() => gifInputRef.current?.click()}
-                className="w-full py-2 px-3 mb-3 bg-[#22c55e]/15 hover:bg-[#22c55e]/25 text-[#22c55e] border border-[#22c55e]/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                className="w-full py-2 px-3 mb-3 bg-[#1d9bf0]/15 hover:bg-[#1d9bf0]/25 text-[#1d9bf0] border border-[#1d9bf0]/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Subir archivo .GIF desde tu dispositivo a Supabase</span>
+                <span>Subir archivo .GIF desde tu dispositivo</span>
               </button>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -396,7 +418,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                   <div
                     key={idx}
                     onClick={() => handleSelectPresetGif(gif)}
-                    className="relative rounded-lg overflow-hidden group cursor-pointer border border-[#2f3336] hover:border-[#22c55e] transition-all aspect-video bg-black flex items-center justify-center"
+                    className="relative rounded-lg overflow-hidden group cursor-pointer border border-[#2f3336] hover:border-[#1d9bf0] transition-all aspect-video bg-black flex items-center justify-center"
                   >
                     <img src={gif.url} alt={gif.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     <div className="absolute inset-x-0 bottom-0 bg-black/70 p-1 text-[10px] text-white font-medium truncate text-center">
@@ -429,14 +451,14 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                 value={opt}
                 onChange={(e) => handlePollOptionChange(i, e.target.value)}
                 maxLength={40}
-                className="bg-black/60 border border-[#2f3336] rounded-lg px-3 py-2 text-sm text-[#e7e9ea] focus:border-[#22c55e] outline-none"
+                className="bg-black/60 border border-[#2f3336] rounded-lg px-3 py-2 text-sm text-[#e7e9ea] focus:border-[#1d9bf0] outline-none"
               />
             ))}
             {pollOptions.length < 4 && (
               <button
                 type="button"
                 onClick={handleAddPollOption}
-                className="text-xs font-bold text-[#22c55e] hover:underline self-start mt-1"
+                className="text-xs font-bold text-[#1d9bf0] hover:underline self-start mt-1"
               >
                 + Añadir otra opción
               </button>
@@ -482,8 +504,8 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer"
-              title="Foto / Imagen a Supabase"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              title="Foto / Imagen"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
@@ -492,8 +514,8 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setShowGifPicker(!showGifPicker)}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer flex items-center justify-center"
-              title="Añadir GIF (subir o seleccionar)"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer flex items-center justify-center"
+              title="Añadir GIF"
             >
               <span className="text-[11px] font-black border border-current rounded px-1 py-0.2 leading-none">
                 GIF
@@ -504,8 +526,8 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer"
-              title="Video a Supabase (MP4, WEBM, MOV)"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              title="Video (MP4, WEBM, MOV)"
             >
               <Film className="w-5 h-5" />
             </button>
@@ -514,7 +536,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => audioInputRef.current?.click()}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
               title="Subir archivo de audio (MP3, WAV, M4A)"
             >
               <Music className="w-5 h-5" />
@@ -527,7 +549,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               className={`p-2 rounded-full transition-colors cursor-pointer ${
                 isRecording
                   ? 'text-red-500 bg-red-500/20'
-                  : 'text-[#22c55e] hover:bg-[#22c55e]/10'
+                  : 'text-[#1d9bf0] hover:bg-[#1d9bf0]/10'
               }`}
               title="Grabar nota de voz con micrófono"
             >
@@ -538,7 +560,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setShowPoll(!showPoll)}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
               title="Crear encuesta"
             >
               <BarChart2 className="w-5 h-5" />
@@ -548,7 +570,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setContent((prev) => prev + ' 🚀')}
-              className="p-2 text-[#22c55e] hover:bg-[#22c55e]/10 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
               title="Añadir emoji"
             >
               <Smile className="w-5 h-5" />
@@ -566,13 +588,28 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               }}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ml-1 ${
                 isAnonymous
-                  ? 'bg-[#22c55e] text-black border-[#22c55e] shadow-sm'
-                  : 'text-[#71767b] border-[#2f3336] hover:text-[#22c55e] hover:border-[#22c55e]/40'
+                  ? 'bg-[#1d9bf0] text-white border-[#1d9bf0] shadow-sm'
+                  : 'text-[#71767b] border-[#2f3336] hover:text-[#1d9bf0] hover:border-[#1d9bf0]/40'
               }`}
               title="Publicar en Modo Anónimo y modificar nombre"
             >
               <span className="text-xs">🎭</span>
               <span className="hidden sm:inline">{isAnonymous ? 'Anónimo Activo' : 'Anónimo'}</span>
+            </button>
+
+            {/* Extalmita Muro Público Toggle */}
+            <button
+              type="button"
+              onClick={() => setPostToExtalmita(!postToExtalmita)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ml-1 ${
+                postToExtalmita
+                  ? 'bg-[#1d9bf0] text-white border-[#1d9bf0] shadow-sm'
+                  : 'text-[#71767b] border-[#2f3336] hover:text-[#1d9bf0] hover:border-[#1d9bf0]/40'
+              }`}
+              title="Publicar en el muro público oficial Extalmita"
+            >
+              <span className="text-xs">🌐</span>
+              <span className="hidden sm:inline">Extalmita</span>
             </button>
           </div>
 
@@ -582,7 +619,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                 className={`text-xs ${
                   isOverLimit
                     ? 'text-red-500 font-bold'
-                    : charsLeft <= 20
+                    : charsLeft <= 50
                     ? 'text-yellow-500'
                     : 'text-[#71767b]'
                 }`}
@@ -597,8 +634,8 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               disabled={!canSubmit}
               className={`font-bold px-4 py-1.5 rounded-full text-sm transition-all duration-200 flex items-center gap-1.5 ${
                 canSubmit
-                  ? 'bg-[#22c55e] hover:bg-[#16a34a] text-black active:scale-95 shadow-sm cursor-pointer'
-                  : 'bg-[#22c55e]/40 text-black/60 cursor-not-allowed'
+                  ? 'bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white active:scale-95 shadow-sm cursor-pointer'
+                  : 'bg-[#1d9bf0]/40 text-white/60 cursor-not-allowed'
               }`}
             >
               {isSubmitting ? (

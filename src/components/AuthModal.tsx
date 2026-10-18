@@ -150,7 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
 
         {/* Standard Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
             <label className="text-[11px] text-[#71767b] block font-medium">
               Gmail, nombre de usuario o número telefónico
             </label>
@@ -165,7 +165,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
             />
           </div>
 
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black relative">
+          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black relative">
             <label className="text-[11px] text-[#71767b] block font-medium">
               Contraseña
             </label>
@@ -217,7 +217,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
                   onClose();
                 }
               }}
-              className="text-[#22c55e] hover:underline cursor-pointer font-bold inline"
+              className="text-[#1d9bf0] hover:underline cursor-pointer font-bold inline"
             >
               Regístrate
             </button>

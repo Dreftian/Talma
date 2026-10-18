@@ -123,12 +123,11 @@ api.post('/upload', async (c) => {
       mediaType = 'image';
     }
 
-    // Direct upload with apikey and Authorization Bearer
+    // Direct upload with apikey to avoid Invalid Compact JWS error
     let uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_SECRET_KEY,
-        Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
         'Content-Type': mimeType,
         'x-upsert': 'true',
       },
@@ -144,7 +143,6 @@ api.post('/upload', async (c) => {
           method: 'POST',
           headers: {
             apikey: SUPABASE_SECRET_KEY,
-            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -159,7 +157,6 @@ api.post('/upload', async (c) => {
           method: 'POST',
           headers: {
             apikey: SUPABASE_SECRET_KEY,
-            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
             'Content-Type': mimeType,
             'x-upsert': 'true',
           },
@@ -200,6 +197,15 @@ api.get('/posts', async (c) => {
   const tab = c.req.query('tab') || 'for_you';
 
   let posts = await db.getPosts(currentUserId);
+
+  if (tab === 'extalmita') {
+    posts = posts.filter(
+      (p: any) =>
+        p.is_extalmita ||
+        p.user_id === 'extalmita' ||
+        (p.content && (p.content.toLowerCase().includes('#extalmita') || p.content.toLowerCase().includes('extalmita')))
+    );
+  }
 
   if (username) {
     const profile = await db.getProfileByUsername(username);

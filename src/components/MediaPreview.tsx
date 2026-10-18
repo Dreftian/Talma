@@ -227,7 +227,7 @@ const AudioPlayerItem: React.FC<{
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          className="w-12 h-12 rounded-full bg-[#22c55e] hover:bg-[#16a34a] text-black flex items-center justify-center shrink-0 shadow-md transition-transform active:scale-95"
+          className="w-12 h-12 rounded-full bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white flex items-center justify-center shrink-0 shadow-md transition-transform active:scale-95 cursor-pointer"
         >
           {isPlaying ? (
             <Pause className="w-6 h-6 fill-current" />
@@ -253,7 +253,7 @@ const AudioPlayerItem: React.FC<{
             max={duration || 100}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1.5 bg-[#2f3336] rounded-lg appearance-none cursor-pointer accent-[#22c55e]"
+            className="w-full h-1.5 bg-[#2f3336] rounded-lg appearance-none cursor-pointer accent-[#1d9bf0]"
           />
         </div>
 
@@ -274,7 +274,7 @@ const AudioPlayerItem: React.FC<{
             <div
               key={i}
               className={`flex-1 rounded-full transition-all duration-300 ${
-                isPlaying ? 'bg-[#22c55e] animate-pulse' : 'bg-[#71767b]/50'
+                isPlaying ? 'bg-[#1d9bf0] animate-pulse' : 'bg-[#71767b]/50'
               }`}
               style={{
                 height: `${h}%`,

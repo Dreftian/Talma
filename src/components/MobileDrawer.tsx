@@ -78,7 +78,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 {currentUser.display_name}
               </span>
               {currentUser.is_verified && (
-                <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
               )}
             </div>
             <span className="text-sm text-[#71767b]">@{currentUser.username}</span>
@@ -157,10 +157,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
         {/* Bottom Drawer Actions */}
         <div className="flex flex-col gap-2 pt-4 border-t border-[#2f3336]">
-          {/* Admin status pill */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl text-xs text-[#22c55e] font-semibold">
+          {/* Status pill */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#1d9bf0]/10 border border-[#1d9bf0]/30 rounded-xl text-xs text-[#1d9bf0] font-semibold">
             <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Cuenta Admin Activa</span>
+            <span>Cuenta Verificada</span>
           </div>
 
           <button
@@ -176,7 +176,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           </button>
 
           <span className="text-[11px] text-[#71767b] px-2 pt-1">
-            Talma v1.0.0 · Supabase Full Stack
+            Talma Social
           </span>
         </div>
       </div>

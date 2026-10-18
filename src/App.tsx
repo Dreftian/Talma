@@ -214,8 +214,13 @@ export default function App() {
               />
               <div className="flex flex-col">
                 {posts.filter((p) => p.is_bookmarked).length === 0 ? (
-                  <div className="p-12 text-center text-[#71767b]">
-                    Aún no has guardado ningún post. Haz clic en el ícono de guardar en cualquier post para leerlo más tarde.
+                  <div className="flex flex-col items-start justify-center p-8 max-w-sm mx-auto text-left mt-8">
+                    <h2 className="text-[31px] font-extrabold text-[#e7e9ea] leading-tight mb-2">
+                      Guarda publicaciones para verlas más tarde
+                    </h2>
+                    <p className="text-[15px] text-[#71767b] leading-normal">
+                      ¡No dejes que se te escapen las buenas! Guarda publicaciones para volver a encontrarlas fácilmente en el futuro.
+                    </p>
                   </div>
                 ) : (
                   posts
@@ -249,7 +254,7 @@ export default function App() {
                 <div className="px-4 py-2.5 bg-[#16181c] border-b border-[#2f3336] flex items-center justify-between">
                   <span className="text-sm text-[#71767b]">
                     Resultados para:{' '}
-                    <span className="font-bold text-[#22c55e]">"{searchFilter}"</span>
+                    <span className="font-bold text-[#1d9bf0]">"{searchFilter}"</span>
                   </span>
                   <button
                     onClick={() => setSearchFilter('')}
@@ -270,8 +275,8 @@ export default function App() {
               <div className="flex flex-col pb-20">
                 {loadingPosts ? (
                   <div className="p-12 text-center text-[#71767b] flex flex-col items-center gap-2">
-                    <div className="w-6 h-6 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">Cargando posts de Talma...</span>
+                    <div className="w-6 h-6 border-2 border-[#1d9bf0] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Cargando publicaciones...</span>
                   </div>
                 ) : displayPosts.length === 0 ? (
                   <div className="p-12 text-center text-[#71767b]">
@@ -312,7 +317,7 @@ export default function App() {
       {currentTab !== 'messages' && (
         <button
           onClick={() => setShowComposerModal(true)}
-          className="fixed bottom-18 right-4 sm:hidden bg-[#22c55e] hover:bg-[#16a34a] text-black p-3.5 rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#22c55e]/50 shadow-green-950/40"
+          className="fixed bottom-18 right-4 sm:hidden bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white p-3.5 rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#1d9bf0]/50 shadow-[#1d9bf0]/40"
           title="Nuevo post"
         >
           <Feather className="w-6 h-6 stroke-[2.4]" />
@@ -350,8 +355,8 @@ export default function App() {
         >
           <div className="relative">
             <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5] text-white' : ''}`} />
-            <span className="absolute -top-1 -right-1.5 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-              3
+            <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+              2
             </span>
           </div>
         </button>
@@ -365,7 +370,7 @@ export default function App() {
         >
           <div className="relative">
             <Mail className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5] text-white' : ''}`} />
-            <span className="absolute -top-1 -right-1.5 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+            <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
               1
             </span>
           </div>
@@ -394,7 +399,7 @@ export default function App() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <span className="text-xs font-bold text-[#22c55e]">TALMA · POST</span>
+              <span className="text-xs font-bold text-[#1d9bf0]">TALMA</span>
             </div>
             <div className="pt-3 flex-1">
               <TweetComposer

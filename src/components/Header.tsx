@@ -4,8 +4,8 @@ import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
 
 interface HeaderProps {
-  activeTab: 'for_you' | 'following';
-  onTabChange: (tab: 'for_you' | 'following') => void;
+  activeTab: 'for_you' | 'following' | 'extalmita';
+  onTabChange: (tab: 'for_you' | 'following' | 'extalmita') => void;
   title?: string;
   onBack?: () => void;
   currentUser?: UserProfile;
@@ -94,12 +94,12 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        <button className="text-[#71767b] hover:text-[#22c55e] p-1 transition-colors">
+        <button className="text-[#71767b] hover:text-[#1d9bf0] p-1 transition-colors">
           <Sparkles className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Tabs: Para ti & Siguiendo */}
+      {/* Tabs: Para ti, Siguiendo, Extalmita */}
       <div className="flex w-full h-[53px]">
         <button
           onClick={() => onTabChange('for_you')}
@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
             Para ti
           </span>
           {activeTab === 'for_you' && (
-            <div className="absolute bottom-0 h-[4px] w-14 bg-[#22c55e] rounded-full" />
+            <div className="absolute bottom-0 h-[4px] w-14 bg-[#1d9bf0] rounded-full" />
           )}
         </button>
 
@@ -133,7 +133,26 @@ export const Header: React.FC<HeaderProps> = ({
             Siguiendo
           </span>
           {activeTab === 'following' && (
-            <div className="absolute bottom-0 h-[4px] w-16 bg-[#22c55e] rounded-full" />
+            <div className="absolute bottom-0 h-[4px] w-16 bg-[#1d9bf0] rounded-full" />
+          )}
+        </button>
+
+        <button
+          onClick={() => onTabChange('extalmita')}
+          className="flex-1 flex justify-center items-center hover:bg-[#181818] transition-colors relative cursor-pointer"
+        >
+          <span
+            className={`text-[15px] flex items-center gap-1 ${
+              activeTab === 'extalmita'
+                ? 'font-bold text-white'
+                : 'font-medium text-[#71767b]'
+            }`}
+          >
+            <span>Extalmita</span>
+            <span className="text-xs">🌐</span>
+          </span>
+          {activeTab === 'extalmita' && (
+            <div className="absolute bottom-0 h-[4px] w-20 bg-[#1d9bf0] rounded-full" />
           )}
         </button>
       </div>

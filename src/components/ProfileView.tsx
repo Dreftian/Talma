@@ -112,10 +112,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {profile.display_name}
             </span>
             {profile.is_verified && (
-              <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black" />
+              <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black" />
             )}
           </div>
-          <span className="text-xs text-[#71767b]">{posts.length} posts</span>
+          <span className="text-xs text-[#71767b]">{posts.length} publicaciones</span>
         </div>
       </div>
 
@@ -148,18 +148,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {isMe ? (
             <button
               onClick={() => setShowEditModal(true)}
-              className="border border-[#71767b] hover:bg-[#181818] text-white font-bold px-5 py-2 rounded-full text-sm transition-colors flex items-center gap-1.5"
+              className="border border-[#536471] hover:bg-white/10 text-white font-bold px-4 py-1.5 rounded-full text-[14px] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <Edit3 className="w-4 h-4" />
               <span>Editar perfil</span>
             </button>
           ) : (
             <button
               onClick={handleFollowToggle}
-              className={`font-bold px-5 py-2 rounded-full text-sm transition-colors ${
+              className={`font-bold px-4 py-1.5 rounded-full text-[14px] transition-colors cursor-pointer ${
                 isFollowing
-                  ? 'border border-[#71767b] text-white hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
-                  : 'bg-white text-black hover:bg-white/90'
+                  ? 'border border-[#536471] text-white hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
+                  : 'bg-white text-black hover:bg-[#d7dbdc]'
               }`}
             >
               {isFollowing ? 'Siguiendo' : 'Seguir'}
@@ -174,7 +173,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-1">
             <h1 className="text-xl font-extrabold text-white">{profile.display_name}</h1>
             {profile.is_verified && (
-              <CheckCircle2 className="w-5 h-5 text-[#22c55e] fill-[#22c55e] stroke-black" />
+              <CheckCircle2 className="w-5 h-5 text-[#1d9bf0] fill-[#1d9bf0] stroke-black" />
             )}
           </div>
           <span className="text-sm text-[#71767b]">@{profile.username}</span>
@@ -201,7 +200,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 href={profile.website}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[#22c55e] hover:underline"
+                className="text-[#1d9bf0] hover:underline"
               >
                 {profile.website.replace('https://', '')}
               </a>
@@ -227,20 +226,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Tabs bar */}
-      <div className="flex border-b border-[#2f3336] mt-4">
+      <div className="flex border-b border-[#2f3336] mt-4 overflow-x-auto no-scrollbar">
         {[
-          { id: 'posts', label: 'Posts' },
+          { id: 'posts', label: 'Publicaciones' },
           { id: 'replies', label: 'Respuestas' },
+          { id: 'highlights', label: 'Destacados' },
+          { id: 'articles', label: 'Artículos' },
           { id: 'media', label: 'Fotos y videos' },
           { id: 'likes', label: 'Me gusta' },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className="flex-1 py-3 text-center hover:bg-[#181818] transition-colors relative cursor-pointer"
+            className="flex-1 min-w-[100px] py-3.5 text-center hover:bg-[#181818] transition-colors relative cursor-pointer"
           >
             <span
-              className={`text-sm ${
+              className={`text-[15px] ${
                 activeTab === tab.id
                   ? 'font-bold text-white'
                   : 'font-medium text-[#71767b]'
@@ -249,7 +250,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {tab.label}
             </span>
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-12 bg-[#22c55e] rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-14 bg-[#1d9bf0] rounded-full" />
             )}
           </button>
         ))}

@@ -150,17 +150,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 overflow-y-auto pr-1">
           {/* Avatar selector (OBLIGATORIO) */}
           <div className="flex items-center gap-4 py-2 px-3 bg-[#16181c] rounded-xl border border-[#2f3336]">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black border-2 border-[#22c55e] flex items-center justify-center shrink-0 shadow-md">
+            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black border-2 border-[#1d9bf0] flex items-center justify-center shrink-0 shadow-md">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar preview" className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center">
-                  <Camera className="w-6 h-6 text-[#22c55e] mx-auto opacity-80" />
+                  <Camera className="w-6 h-6 text-[#1d9bf0] mx-auto opacity-80" />
                 </div>
               )}
               {isUploadingAvatar && (
                 <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 text-[#22c55e] animate-spin" />
+                  <Loader2 className="w-5 h-5 text-[#1d9bf0] animate-spin" />
                 </div>
               )}
             </div>
@@ -179,8 +179,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 disabled={isUploadingAvatar}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
                   avatarUrl
-                    ? 'bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/50 hover:bg-[#22c55e]/25'
-                    : 'bg-[#22c55e] text-black border-[#22c55e] hover:bg-[#16a34a]'
+                    ? 'bg-[#1d9bf0]/15 text-[#1d9bf0] border-[#1d9bf0]/50 hover:bg-[#1d9bf0]/25'
+                    : 'bg-[#1d9bf0] text-white border-[#1d9bf0] hover:bg-[#1a8cd8]'
                 }`}
               >
                 {avatarUrl ? (
@@ -196,14 +196,14 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 )}
               </button>
               <p className="text-[11px] text-[#71767b] mt-1">
-                {avatarUrl ? 'Foto subida con éxito a Supabase' : 'Obligatorio: Sube tu foto de perfil'}
+                {avatarUrl ? 'Foto de perfil lista' : 'Obligatorio: Sube tu foto de perfil'}
               </p>
             </div>
           </div>
 
           {/* Nombre y Apellido (Obligatorios) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
               <label className="text-[11px] text-[#71767b] block font-medium">
                 Nombre *
               </label>
@@ -217,7 +217,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
               />
             </div>
 
-            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
               <label className="text-[11px] text-[#71767b] block font-medium">
                 Apellido *
               </label>
@@ -234,7 +234,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
           {/* Edad y Nombre de usuario */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
               <label className="text-[11px] text-[#71767b] block font-medium">
                 Edad *
               </label>
@@ -250,7 +250,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
               />
             </div>
 
-            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
               <label className="text-[11px] text-[#71767b] block font-medium">
                 Nombre de usuario (@) *
               </label>
@@ -269,7 +269,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
           </div>
 
           {/* Gmail / Correo electrónico (Obligatorio) */}
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black">
             <label className="text-[11px] text-[#71767b] block font-medium">
               Gmail / Correo electrónico *
             </label>
@@ -284,7 +284,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
           </div>
 
           {/* Contraseña (Obligatorio) */}
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black relative">
+          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#1d9bf0] transition-colors bg-black relative">
             <label className="text-[11px] text-[#71767b] block font-medium">
               Contraseña *
             </label>
@@ -320,7 +320,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
             ¿Ya tienes una cuenta?{' '}
             <span
               onClick={onSwitchToLogin}
-              className="text-[#22c55e] hover:underline cursor-pointer font-bold"
+              className="text-[#1d9bf0] hover:underline cursor-pointer font-bold"
             >
               Iniciar sesión
             </span>

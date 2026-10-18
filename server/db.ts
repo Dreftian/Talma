@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase.ts';
+import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL, SUPABASE_SECRET_KEY } from './supabase.ts';
 
 const DB_PATH = path.resolve(process.cwd(), 'data', 'talma_db.json');
 
@@ -58,6 +58,7 @@ export interface PostItem {
   anonymous_name?: string;
   anonymous_avatar?: string;
   author_ip?: string;
+  is_extalmita?: boolean;
   likes_count: number;
   reposts_count: number;
   replies_count: number;
@@ -99,6 +100,20 @@ const INITIAL_DB: DatabaseSchema = {
       website: 'https://talma.app',
       is_verified: true,
       followers_count: 0,
+      following_count: 0,
+      joined_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      id: 'extalmita',
+      username: 'Extalmita',
+      display_name: 'Extalmita 🌐',
+      avatar_url: `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/logo-talma.png`,
+      banner_url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80',
+      bio: 'Espacio público oficial de Talma 🌐 Todas las publicaciones de la comunidad se comparten aquí para que todos los usuarios puedan verlas e interactuar libremente en tiempo real.',
+      location: 'Comunidad Global',
+      website: 'https://talma.app/extalmita',
+      is_verified: true,
+      followers_count: 142,
       following_count: 0,
       joined_at: '2026-01-01T00:00:00Z',
     },
@@ -146,9 +161,60 @@ const INITIAL_DB: DatabaseSchema = {
 };
 
 let memoryDb: DatabaseSchema | null = null;
+const CLOUD_DB_KEY = 'system/talma_db.json';
+let lastCloudFetch = 0;
+let isSyncingToCloud = false;
+
+// Async function to load cloud DB from Supabase Storage
+async function syncFromCloud(): Promise<DatabaseSchema | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${CLOUD_DB_KEY}?t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.profiles) && Array.isArray(data.posts)) {
+        memoryDb = data;
+        lastCloudFetch = Date.now();
+        try {
+          fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+        } catch {}
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn('Sync from Supabase Storage notice:', err);
+  }
+  return null;
+}
+
+// Async function to push updated DB to Supabase Storage
+async function pushToCloud(data: DatabaseSchema): Promise<void> {
+  if (isSyncingToCloud) return;
+  isSyncingToCloud = true;
+  try {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${CLOUD_DB_KEY}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_SECRET_KEY,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: JSON.stringify(data),
+    });
+  } catch (err) {
+    console.error('Failed to push DB to Supabase Storage:', err);
+  } finally {
+    isSyncingToCloud = false;
+  }
+}
+
+// Initial background sync
+syncFromCloud().catch(() => {});
 
 function readDb(): DatabaseSchema {
   if (memoryDb && memoryDb.profiles && memoryDb.profiles.some((p) => p.id === 'admin')) {
+    if (Date.now() - lastCloudFetch > 2500) {
+      syncFromCloud().catch(() => {});
+    }
     return memoryDb;
   }
   try {
@@ -157,6 +223,7 @@ function readDb(): DatabaseSchema {
       const parsed = JSON.parse(data);
       if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin')) {
         memoryDb = parsed;
+        syncFromCloud().catch(() => {});
         return memoryDb!;
       }
     }
@@ -165,11 +232,13 @@ function readDb(): DatabaseSchema {
   }
   memoryDb = JSON.parse(JSON.stringify(INITIAL_DB));
   writeDb(memoryDb!);
+  syncFromCloud().catch(() => {});
   return memoryDb!;
 }
 
 function writeDb(data: DatabaseSchema): void {
   memoryDb = data;
+  lastCloudFetch = Date.now();
   try {
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) {
@@ -179,6 +248,8 @@ function writeDb(data: DatabaseSchema): void {
   } catch (err) {
     // In serverless environment (e.g. Vercel read-only FS), keep in memoryDb
   }
+  // Immediately persist to cloud storage so all devices stay in sync
+  pushToCloud(data).catch(() => {});
 }
 
 // Check if Supabase Postgres table is available
@@ -458,6 +529,7 @@ export const db = {
     anonymous_name?: string;
     anonymous_avatar?: string;
     client_ip?: string;
+    is_extalmita?: boolean;
   }): Promise<any> => {
     const state = readDb();
     const newPost: PostItem = {
@@ -485,6 +557,7 @@ export const db = {
       anonymous_name: data.anonymous_name || (data.is_anonymous ? 'Anónimo' : undefined),
       anonymous_avatar: data.anonymous_avatar,
       author_ip: data.client_ip || '',
+      is_extalmita: Boolean(data.is_extalmita),
       likes_count: 0,
       reposts_count: 0,
       replies_count: 0,

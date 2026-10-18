@@ -150,7 +150,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
           {/* Fields */}
           <div className="px-4 flex flex-col gap-4">
-            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e] transition-colors">
+            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#1d9bf0] transition-colors">
               <label className="text-xs text-[#71767b] block font-medium">Nombre</label>
               <input
                 type="text"
@@ -161,7 +161,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               />
             </div>
 
-            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e] transition-colors">
+            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#1d9bf0] transition-colors">
               <label className="text-xs text-[#71767b] block font-medium">Biografía</label>
               <textarea
                 value={bio}
@@ -172,7 +172,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               />
             </div>
 
-            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e] transition-colors">
+            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#1d9bf0] transition-colors">
               <label className="text-xs text-[#71767b] block font-medium">Ubicación</label>
               <input
                 type="text"
@@ -183,7 +183,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               />
             </div>
 
-            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e] transition-colors">
+            <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#1d9bf0] transition-colors">
               <label className="text-xs text-[#71767b] block font-medium">Sitio web</label>
               <input
                 type="text"

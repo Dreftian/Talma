@@ -18,7 +18,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col justify-between selection:bg-[#22c55e]/30">
+    <div className="min-h-screen bg-black text-white flex flex-col justify-between selection:bg-[#1d9bf0]/30">
       {/* Main Hero Section */}
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 sm:px-12 py-10 max-w-7xl mx-auto w-full gap-10 lg:gap-20">
         {/* Left Side: Big Logo on Desktop */}
@@ -93,7 +93,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginSuccess }) => {
             <button
               type="button"
               onClick={() => setShowRegisterModal(true)}
-              className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black font-extrabold py-3 px-4 rounded-full text-sm transition-all active:scale-[0.98] shadow-md cursor-pointer"
+              className="w-full bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-extrabold py-3 px-4 rounded-full text-sm transition-all active:scale-[0.98] shadow-md cursor-pointer"
             >
               Crear cuenta
             </button>
@@ -101,9 +101,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginSuccess }) => {
             {/* Legal terms */}
             <p className="text-[11px] text-[#71767b] leading-tight mt-1">
               Al registrarte, aceptas los{' '}
-              <span className="text-[#22c55e] hover:underline cursor-pointer">Términos de servicio</span> y la{' '}
-              <span className="text-[#22c55e] hover:underline cursor-pointer">Política de privacidad</span>, incluida la política de{' '}
-              <span className="text-[#22c55e] hover:underline cursor-pointer">Uso de Cookies</span>.
+              <span className="text-[#1d9bf0] hover:underline cursor-pointer">Términos de servicio</span> y la{' '}
+              <span className="text-[#1d9bf0] hover:underline cursor-pointer">Política de privacidad</span>, incluida la política de{' '}
+              <span className="text-[#1d9bf0] hover:underline cursor-pointer">Uso de Cookies</span>.
             </p>
 
             {/* Already have an account */}
@@ -112,7 +112,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginSuccess }) => {
               <button
                 type="button"
                 onClick={() => setShowAuthModal(true)}
-                className="w-full py-2.5 px-4 border border-[#536471] hover:bg-white/5 text-[#22c55e] font-bold rounded-full text-sm transition-colors cursor-pointer"
+                className="w-full py-2.5 px-4 border border-[#536471] hover:bg-white/5 text-[#1d9bf0] font-bold rounded-full text-sm transition-colors cursor-pointer"
               >
                 Iniciar sesión
               </button>

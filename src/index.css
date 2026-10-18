@@ -1,24 +1,83 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
+  :root,
+  .theme-dark {
     color-scheme: dark;
     --bg-primary: #000000;
+    --bg-secondary: #16181c;
+    --bg-hover: rgba(239, 243, 244, 0.1);
     --border-color: #2f3336;
     --text-primary: #e7e9ea;
     --text-secondary: #71767b;
-    --brand-green: #22c55e;
-    --brand-green-hover: #16a34a;
     --brand-blue: #1d9bf0;
+    --brand-blue-hover: #1a8cd8;
+    --like-pink: #f91880;
+    --retweet-green: #00ba7c;
+  }
+
+  .theme-dim {
+    color-scheme: dark;
+    --bg-primary: #15202b;
+    --bg-secondary: #1e2732;
+    --bg-hover: rgba(247, 249, 249, 0.1);
+    --border-color: #38444d;
+    --text-primary: #f7f9f9;
+    --text-secondary: #8b98a5;
+    --brand-blue: #1d9bf0;
+    --brand-blue-hover: #1a8cd8;
+    --like-pink: #f91880;
+    --retweet-green: #00ba7c;
+  }
+
+  .theme-light {
+    color-scheme: light;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f9f9;
+    --bg-hover: rgba(15, 20, 25, 0.1);
+    --border-color: #eff3f4;
+    --text-primary: #0f1419;
+    --text-secondary: #536471;
+    --brand-blue: #1d9bf0;
+    --brand-blue-hover: #1a8cd8;
     --like-pink: #f91880;
     --retweet-green: #00ba7c;
   }
 
   body {
-    background-color: #000000;
-    color: #e7e9ea;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
+}
+
+.theme-light .bg-black {
+  background-color: #ffffff !important;
+}
+.theme-light .text-\[\#e7e9ea\] {
+  color: #0f1419 !important;
+}
+.theme-light .border-\[\#2f3336\] {
+  border-color: #eff3f4 !important;
+}
+.theme-light .bg-\[\#16181c\] {
+  background-color: #f7f9f9 !important;
+}
+.theme-light .bg-\[\#202327\] {
+  background-color: #eff3f4 !important;
+}
+
+.theme-dim .bg-black {
+  background-color: #15202b !important;
+}
+.theme-dim .border-\[\#2f3336\] {
+  border-color: #38444d !important;
+}
+.theme-dim .bg-\[\#16181c\] {
+  background-color: #1e2732 !important;
+}
+.theme-dim .bg-\[\#202327\] {
+  background-color: #273340 !important;
 }
 
 /* Custom scrollbar matching X */
@@ -27,17 +86,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #000000;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #2f3336;
-  border: 4px solid #000000;
+  border: 4px solid transparent;
+  background-clip: padding-box;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3e4144;
+  background: #536471;
+  border: 4px solid transparent;
+  background-clip: padding-box;
 }
 
 /* Modal and backdrop animations */

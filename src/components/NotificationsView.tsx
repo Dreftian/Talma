@@ -1,5 +1,5 @@
-import React from 'react';
-import { Heart, Repeat2, ShieldCheck, Database, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Sparkles, UserPlus, Heart, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface NotificationsViewProps {
@@ -10,33 +10,26 @@ interface NotificationsViewProps {
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
   currentUser,
 }) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'mentions'>('all');
+
   const notifications = [
     {
       id: 'notif_1',
       type: 'system',
-      title: 'Sistema Talma',
-      text: '¡Bienvenido Administrador! Tu cuenta está activa con acceso completo a Supabase Storage y Base de Datos.',
-      time: '1m',
-      icon: ShieldCheck,
-      iconColor: 'text-[#22c55e]',
+      title: 'Bienvenido a Talma',
+      text: 'Explora lo que está pasando en el mundo, comparte ideas con fotos, videos y audios al instante.',
+      time: '1h',
+      icon: Sparkles,
+      iconColor: 'text-[#1d9bf0]',
     },
     {
       id: 'notif_2',
-      type: 'storage',
-      title: 'Supabase Storage',
-      text: 'El bucket "talma-media" está listo para subir fotos, videos de alta definición, audios y GIFs sin límites.',
-      time: '15m',
-      icon: Database,
-      iconColor: 'text-[#22c55e]',
-    },
-    {
-      id: 'notif_3',
-      type: 'welcome',
-      title: 'Talma Social',
-      text: 'Talma es 100% gratuita y abierta. Sin muros de pago ni suscripciones VIP.',
-      time: '1h',
-      icon: Sparkles,
-      iconColor: 'text-[#22c55e]',
+      type: 'account',
+      title: 'Cuenta activa',
+      text: `@${currentUser.username}, tu perfil está completamente configurado y listo para interactuar.`,
+      time: '3h',
+      icon: CheckCircle2,
+      iconColor: 'text-[#1d9bf0]',
     },
   ];
 
@@ -45,17 +38,36 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
       {/* Header */}
       <div className="sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
         <h1 className="font-extrabold text-xl text-white">Notificaciones</h1>
-        <Sparkles className="w-5 h-5 text-[#22c55e]" />
+        <button className="p-2 -mr-2 text-[#71767b] hover:text-white hover:bg-[#181818] rounded-full transition-colors cursor-pointer">
+          <Settings className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="flex border-b border-[#2f3336]">
-        <button className="flex-1 py-3.5 text-center font-bold text-white relative hover:bg-[#181818] transition-colors">
-          Todas
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-12 bg-[#22c55e] rounded-full" />
-        </button>
-        <button className="flex-1 py-3.5 text-center font-medium text-[#71767b] hover:bg-[#181818] transition-colors">
-          Menciones
-        </button>
+        {[
+          { id: 'all', label: 'Todas' },
+          { id: 'verified', label: 'Verificadas' },
+          { id: 'mentions', label: 'Menciones' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className="flex-1 py-3.5 text-center relative hover:bg-[#181818] transition-colors cursor-pointer"
+          >
+            <span
+              className={`text-[15px] ${
+                activeTab === tab.id
+                  ? 'font-bold text-white'
+                  : 'font-medium text-[#71767b]'
+              }`}
+            >
+              {tab.label}
+            </span>
+            {activeTab === tab.id && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-14 bg-[#1d9bf0] rounded-full" />
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-col">
