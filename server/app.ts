@@ -23,6 +23,7 @@ api.get('/health', (c) => {
     supabaseUrl: SUPABASE_URL,
     storageBucket: STORAGE_BUCKET,
     isSupabaseDbAvailable: db.isSupabaseAvailable(),
+    secretKeyPrefix: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.slice(0, 10) : 'none',
     time: new Date().toISOString(),
   });
 });
