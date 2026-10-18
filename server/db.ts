@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase.js';
+import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL } from './supabase';
 
 const DB_PATH = path.resolve(process.cwd(), 'data', 'talma_db.json');
 
@@ -233,20 +233,26 @@ const INITIAL_DB: DatabaseSchema = {
   ],
 };
 
+let memoryDb: DatabaseSchema | null = null;
+
 function readDb(): DatabaseSchema {
+  if (memoryDb) return memoryDb;
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
-      return JSON.parse(data);
+      memoryDb = JSON.parse(data);
+      return memoryDb!;
     }
   } catch (err) {
     console.error('Error reading DB file, using fallback:', err);
   }
-  writeDb(INITIAL_DB);
-  return INITIAL_DB;
+  memoryDb = JSON.parse(JSON.stringify(INITIAL_DB));
+  writeDb(memoryDb!);
+  return memoryDb!;
 }
 
 function writeDb(data: DatabaseSchema): void {
+  memoryDb = data;
   try {
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) {
@@ -254,7 +260,7 @@ function writeDb(data: DatabaseSchema): void {
     }
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error writing DB file:', err);
+    // In serverless environment (e.g. Vercel read-only FS), keep in memoryDb
   }
 }
 
