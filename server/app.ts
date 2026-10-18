@@ -27,7 +27,70 @@ api.get('/health', (c) => {
   });
 });
 
-// MEDIA UPLOAD TO SUPABASE STORAGE
+// HELPER TO ENSURE BUCKET EXISTS
+async function ensureBucket() {
+  try {
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+    const exists = buckets?.some((b: any) => b.name === STORAGE_BUCKET || b.id === STORAGE_BUCKET);
+    if (!exists) {
+      await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
+        public: true,
+        fileSizeLimit: 52428800, // 50MB
+        allowedMimeTypes: null,
+      });
+    }
+  } catch (err) {
+    console.warn('Bucket ensure notice:', err);
+  }
+}
+
+// GET SIGNED UPLOAD URL (DIRECT HIGH-SPEED UPLOAD FOR ALL SIZES, VIDEOS, AUDIOS, PHOTOS, GIFS)
+api.post('/upload/sign', async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const originalName = body.name || body.filename || 'file';
+    const mimeType = body.type || body.mimeType || 'application/octet-stream';
+    const ext = originalName.split('.').pop() || 'bin';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+    await ensureBucket();
+
+    // Determine media type
+    let mediaType: 'image' | 'video' | 'audio' | 'gif' = 'image';
+    if (mimeType.startsWith('video/') || ['mp4', 'mov', 'webm', 'avi', 'mkv'].includes(ext.toLowerCase())) {
+      mediaType = 'video';
+    } else if (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext.toLowerCase())) {
+      mediaType = 'audio';
+    } else if (mimeType.includes('gif') || ext.toLowerCase() === 'gif') {
+      mediaType = 'gif';
+    }
+
+    const { data, error } = await supabaseAdmin.storage
+      .from(STORAGE_BUCKET)
+      .createSignedUploadUrl(fileName);
+
+    if (error) {
+      console.error('Error creating signed upload URL:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${fileName}`;
+
+    return c.json({
+      signedUrl: data.signedUrl,
+      token: data.token,
+      publicUrl,
+      fileName,
+      type: mediaType,
+      name: originalName,
+    });
+  } catch (err: any) {
+    console.error('Error in /api/upload/sign:', err);
+    return c.json({ error: err.message || 'Error generando URL de subida' }, 500);
+  }
+});
+
+// MEDIA UPLOAD TO SUPABASE STORAGE (DIRECT PROXY)
 api.post('/upload', async (c) => {
   try {
     const body = await c.req.parseBody();
@@ -47,18 +110,42 @@ api.post('/upload', async (c) => {
 
     // Determine type
     let mediaType: 'image' | 'video' | 'audio' | 'gif' = 'image';
-    if (mimeType.startsWith('video/')) mediaType = 'video';
-    else if (mimeType.startsWith('audio/')) mediaType = 'audio';
-    else if (mimeType.includes('gif')) mediaType = 'gif';
-    else mediaType = 'image';
+    if (mimeType.startsWith('video/') || ['mp4', 'mov', 'webm', 'avi', 'mkv'].includes(ext.toLowerCase())) {
+      mediaType = 'video';
+    } else if (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext.toLowerCase())) {
+      mediaType = 'audio';
+    } else if (mimeType.includes('gif') || ext.toLowerCase() === 'gif') {
+      mediaType = 'gif';
+    } else {
+      mediaType = 'image';
+    }
+
+    await ensureBucket();
 
     // Upload directly to Supabase Storage bucket
-    const { data, error } = await supabaseAdmin.storage
+    let { data, error } = await supabaseAdmin.storage
       .from(STORAGE_BUCKET)
       .upload(fileName, buffer, {
         contentType: mimeType,
         upsert: true,
       });
+
+    if (error && (error.message?.includes('not found') || error.message?.includes('Bucket'))) {
+      // Create bucket on the fly and retry
+      await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
+        public: true,
+        fileSizeLimit: 52428800,
+        allowedMimeTypes: null,
+      });
+      const retry = await supabaseAdmin.storage
+        .from(STORAGE_BUCKET)
+        .upload(fileName, buffer, {
+          contentType: mimeType,
+          upsert: true,
+        });
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Supabase upload error:', error);

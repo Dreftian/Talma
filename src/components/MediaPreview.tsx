@@ -24,7 +24,11 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
         {media.map((item, index) => {
           if (item.type === 'video') {
             return (
-              <div key={index} className="relative w-full bg-black aspect-video flex items-center justify-center">
+              <div
+                key={index}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full bg-black aspect-video flex items-center justify-center"
+              >
                 <video
                   src={item.url}
                   controls
@@ -45,12 +49,13 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
 
           if (item.type === 'audio') {
             return (
-              <AudioPlayerItem
-                key={index}
-                item={item}
-                isComposer={isComposer}
-                onRemove={onRemove ? () => onRemove(index) : undefined}
-              />
+              <div key={index} onClick={(e) => e.stopPropagation()}>
+                <AudioPlayerItem
+                  item={item}
+                  isComposer={isComposer}
+                  onRemove={onRemove ? () => onRemove(index) : undefined}
+                />
+              </div>
             );
           }
 

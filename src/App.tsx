@@ -11,6 +11,7 @@ import { ExploreView } from './components/ExploreView';
 import { NotificationsView } from './components/NotificationsView';
 import { AuthModal } from './components/AuthModal';
 import { MobileDrawer } from './components/MobileDrawer';
+import { LandingView } from './components/LandingView';
 import { Post, UserProfile } from './types';
 import { fetchPosts, fetchMe, deletePost } from './lib/api';
 import {
@@ -23,19 +24,13 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: 'admin',
-    username: 'admin',
-    display_name: 'Admin',
-    avatar_url: 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png',
-    banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-    bio: 'Cuenta Oficial de Administración de Talma 🚀 Plataforma social en tiempo real sobre Supabase. 100% gratuita y sin suscripciones VIP.',
-    location: 'Global',
-    website: 'https://talma.app',
-    is_verified: true,
-    followers_count: 0,
-    following_count: 0,
-    joined_at: '2026-01-01T00:00:00Z',
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('talma_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -52,12 +47,20 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
-    fetchMe(currentUser.id)
-      .then((user) => setCurrentUser(user))
-      .catch(() => {});
-  }, []);
+    if (currentUser?.id) {
+      fetchMe(currentUser.id)
+        .then((user) => {
+          setCurrentUser(user);
+          try {
+            localStorage.setItem('talma_current_user', JSON.stringify(user));
+          } catch {}
+        })
+        .catch(() => {});
+    }
+  }, [currentUser?.id]);
 
   const loadFeed = async () => {
+    if (!currentUser) return;
     try {
       setLoadingPosts(true);
       const data = await fetchPosts(currentUser.id, homeFeedTab);
@@ -70,8 +73,17 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadFeed();
-  }, [homeFeedTab, currentUser.id]);
+    if (currentUser) {
+      loadFeed();
+    }
+  }, [homeFeedTab, currentUser?.id]);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('talma_current_user');
+    } catch {}
+  };
 
   const handlePostCreated = (newPost: Post) => {
     setPosts((prev) => [newPost, ...prev]);
@@ -122,6 +134,19 @@ export default function App() {
       )
     : posts;
 
+  if (!currentUser) {
+    return (
+      <LandingView
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          try {
+            localStorage.setItem('talma_current_user', JSON.stringify(user));
+          } catch {}
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-[#e7e9ea] flex justify-center">
       <div className="flex w-full max-w-[1280px]">
@@ -132,6 +157,7 @@ export default function App() {
           currentUser={currentUser}
           onOpenComposer={() => setShowComposerModal(true)}
           onOpenAuth={() => setShowAuthModal(true)}
+          onLogout={handleLogout}
           onSelectProfile={handleSelectProfile}
         />
 
@@ -351,6 +377,7 @@ export default function App() {
         onSelectTab={handleSelectTab}
         onSelectProfile={handleSelectProfile}
         onOpenAuth={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
       />
 
       {/* Floating Composer Modal (Triggered by Sidebar "Postear" button or Mobile FAB) */}

@@ -20,6 +20,7 @@ interface MobileDrawerProps {
   onSelectTab: (tab: string) => void;
   onSelectProfile: (username: string) => void;
   onOpenAuth: () => void;
+  onLogout?: () => void;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -29,6 +30,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onSelectTab,
   onSelectProfile,
   onOpenAuth,
+  onLogout,
 }) => {
   if (!isOpen) return null;
 
@@ -164,12 +166,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <button
             onClick={() => {
               onClose();
-              onOpenAuth();
+              if (onLogout) onLogout();
+              else onOpenAuth();
             }}
-            className="flex items-center gap-3 py-2.5 px-2 rounded-xl text-red-400 hover:bg-[#181818] transition-colors text-base font-semibold"
+            className="flex items-center gap-3 py-2.5 px-2 rounded-xl text-red-400 hover:bg-[#181818] transition-colors text-base font-semibold cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
-            <span>Cerrar sesión / Cambiar</span>
+            <span>Cerrar sesión</span>
           </button>
 
           <span className="text-[11px] text-[#71767b] px-2 pt-1">

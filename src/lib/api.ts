@@ -92,20 +92,77 @@ export async function votePoll(postId: string, optionId: number, userId: string)
 }
 
 export async function uploadMedia(file: File): Promise<MediaAttachment> {
-  const formData = new FormData();
-  formData.append('file', file);
+  // Strategy 1: Request signed upload URL for direct, unrestricted Supabase Storage upload
+  try {
+    const signRes = await fetch(`${API_BASE}/api/upload/sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+      }),
+    });
 
-  const res = await fetch(`${API_BASE}/api/upload`, {
-    method: 'POST',
-    body: formData,
-  });
+    if (signRes.ok) {
+      const signData = await signRes.json();
+      if (signData.signedUrl && signData.publicUrl) {
+        // Upload binary directly to Supabase Storage
+        const uploadRes = await fetch(signData.signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+          body: file,
+        });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Error subiendo archivo a Supabase Storage');
+        if (uploadRes.ok) {
+          return {
+            url: signData.publicUrl,
+            type: signData.type || 'image',
+            name: file.name,
+            size: file.size,
+          };
+        }
+      }
+    }
+  } catch (signErr) {
+    console.warn('Signed upload failed, trying standard upload proxy...', signErr);
   }
 
-  return res.json();
+  // Strategy 2: Standard multipart form upload proxy
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error subiendo archivo a Supabase Storage');
+  } catch (err: any) {
+    // Strategy 3: For images under 3MB, fallback to base64 Data URL if network/storage is temporarily unavailable
+    if (file.type.startsWith('image/') && file.size < 3 * 1024 * 1024) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            url: reader.result as string,
+            type: file.type.includes('gif') ? 'gif' : 'image',
+            name: file.name,
+            size: file.size,
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    throw err;
+  }
 }
 
 export async function fetchMe(userId: string = 'admin'): Promise<UserProfile> {

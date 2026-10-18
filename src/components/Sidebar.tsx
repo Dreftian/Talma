@@ -21,6 +21,7 @@ interface SidebarProps {
   currentUser: UserProfile;
   onOpenComposer: () => void;
   onOpenAuth: () => void;
+  onLogout?: () => void;
   onSelectProfile: (username: string) => void;
 }
 
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   onOpenComposer,
   onOpenAuth,
+  onLogout,
   onSelectProfile,
 }) => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -130,9 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={() => {
                 setShowUserMenu(false);
-                onOpenAuth();
+                if (onLogout) onLogout();
+                else onOpenAuth();
               }}
-              className="w-full px-4 py-3 text-left hover:bg-[#16181c] flex items-center gap-3 text-[15px] font-semibold text-red-400 transition-colors"
+              className="w-full px-4 py-3 text-left hover:bg-[#16181c] flex items-center gap-3 text-[15px] font-semibold text-red-400 transition-colors cursor-pointer"
             >
               <LogOut className="w-5 h-5" />
               <span>Cerrar sesión de @{currentUser.username}</span>

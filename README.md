@@ -40,22 +40,24 @@ Talma es una red social full-stack inspirada al 100% en el diseño, fluidez y ex
      - **Perfil de Usuario**:
        - Banner, avatar con borde circular, biografía, ubicación, sitio web y fecha de registro
        - Modal para editar perfil subiendo banner y avatar directamente a Supabase Storage
-### 🔐 Acceso de Administrador y Cuenta Única
-- **ID / Usuario**: `admin`
-- **Contraseña**: `admin`
-- **100% Gratuito y Libre**: Sin suscripciones VIP ni muros de pago. Sube fotos, videos en alta definición, notas de voz y GIFs ilimitados a Supabase Storage con total libertad.
-- **Perfiles limpios**: Únicamente la cuenta oficial de administración está activa por defecto.
+### 🚪 Acceso Profesional y Registro para Nuevos Usuarios (Estilo X)
+- **Pantalla de Bienvenida / Landing Page**: Los nuevos visitantes son recibidos con la pantalla oficial idéntica a "X" (Twitter) con el gran logo de Talma, titular *"Lo que está pasando ahora"*, y las opciones para **"Crear cuenta"** o **"Iniciar sesión"**.
+- **Registro de Nuevos Usuarios**: Formulario completo para registrarse con Nombre, @Usuario, Correo y Contraseña, además de subida opcional de avatar a Supabase Storage.
+- **Acceso de Administrador**:
+  - **ID / Usuario**: `admin`
+  - **Contraseña**: `admin`
+- **100% Gratuito y Libre**: Sin suscripciones VIP ni muros de pago. Sube fotos, videos en alta definición, notas de voz (grabación directa con micrófono) y GIFs ilimitados a Supabase Storage con total libertad.
 
 ### 🎨 Experiencia Adaptada por Dispositivo
 - **Versión de Escritorio (Desktop)**:
   - Diseño 100% fiel a la **versión Web de "X"** en 3 columnas.
   - Barra lateral izquierda de navegación con logo interactivo y botón "Postear".
-  - Columna central con pestañas "Para ti" y "Siguiendo", compositor multimedia con Supabase Storage.
+  - Columna central con pestañas "Para ti" y "Siguiendo", compositor multimedia con Supabase Storage (Fotos, Videos, Audios/Notas de voz, GIFs y Encuestas).
   - Barra lateral derecha con barra de búsqueda, "Qué está pasando" (Trending topics) e información del sistema.
 - **Versión Móvil (Mobile)**:
   - Diseño 100% idéntico a la **aplicación móvil de "X"**.
   - **Barra superior**: Avatar de perfil a la izquierda, logo centrado de Talma y botón de ajustes. Al tocar el avatar se despliega el menú lateral deslizante (Drawer).
-  - **Menú Lateral Deslizante (Drawer)**: Muestra perfil de admin, estadísticas (Siguiendo/Seguidores), y accesos a Perfil, Guardados, Explorar, Notificaciones y DMs.
+  - **Menú Lateral Deslizante (Drawer)**: Muestra perfil de usuario, estadísticas (Siguiendo/Seguidores), y accesos a Perfil, Guardados, Explorar, Notificaciones, DMs y Cerrar sesión.
   - **Barra de navegación inferior fija**: 4 accesos rápidos (Inicio, Explorar, Notificaciones con badge, Mensajes).
   - **Botón Flotante de Acción (FAB)**: Botón circular en la esquina inferior derecha para componer publicaciones en un toque.
 
