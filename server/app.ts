@@ -123,56 +123,63 @@ api.post('/upload', async (c) => {
       mediaType = 'image';
     }
 
-    // Upload to Supabase Storage using official Supabase client
-    let { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from(STORAGE_BUCKET)
-      .upload(fileName, buffer, {
-        contentType: mimeType,
-        upsert: true,
-      });
+    // Direct upload with apikey and Authorization Bearer
+    let uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SECRET_KEY,
+        Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+        'Content-Type': mimeType,
+        'x-upsert': 'true',
+      },
+      body: buffer,
+    });
 
-    // If bucket doesn't exist, try creating it and retry upload
-    if (uploadError && (uploadError.message?.includes('Bucket') || (uploadError as any).statusCode === '404')) {
-      try {
-        await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
-          public: true,
-          fileSizeLimit: '100MB',
+    if (!uploadRes.ok) {
+      const errJson = await uploadRes.json().catch(() => ({}));
+      // If bucket does not exist, create bucket and retry
+      if (uploadRes.status === 404 || errJson.message?.includes('Bucket')) {
+        await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_SECRET_KEY,
+            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: STORAGE_BUCKET,
+            name: STORAGE_BUCKET,
+            public: true,
+            file_size_limit: 104857600,
+          }),
         });
-        const retry = await supabaseAdmin.storage
+
+        uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_SECRET_KEY,
+            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+            'Content-Type': mimeType,
+            'x-upsert': 'true',
+          },
+          body: buffer,
+        });
+      }
+
+      if (!uploadRes.ok) {
+        // Try SDK as secondary fallback
+        const sdkRes = await supabaseAdmin.storage
           .from(STORAGE_BUCKET)
           .upload(fileName, buffer, {
             contentType: mimeType,
             upsert: true,
           });
-        uploadData = retry.data;
-        uploadError = retry.error;
-      } catch (e) {
-        console.warn('Bucket creation/retry warning:', e);
-      }
-    }
 
-    if (uploadError) {
-      console.error('Supabase SDK upload error:', uploadError);
-      // Fallback: try raw fetch with apikey only (avoiding Invalid Compact JWS from Authorization header)
-      const directRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_SECRET_KEY,
-          'Content-Type': mimeType,
-          'x-upsert': 'true',
-        },
-        body: buffer,
-      });
-
-      if (!directRes.ok) {
-        const directErr = await directRes.json().catch(() => ({}));
-        console.error('Direct upload fallback error:', directErr);
-        return c.json({
-          error: directErr.message || uploadError.message || 'Error subiendo archivo a Supabase',
-          sdkError: uploadError,
-          directStatus: directRes.status,
-          directErr,
-        }, 500);
+        if (sdkRes.error) {
+          const finalErr = await uploadRes.json().catch(() => ({}));
+          console.error('Upload failed on both direct and SDK:', finalErr, sdkRes.error);
+          return c.json({ error: finalErr.message || sdkRes.error.message || 'Error subiendo archivo a Supabase' }, 500);
+        }
       }
     }
 
