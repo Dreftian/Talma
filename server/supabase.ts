@@ -33,20 +33,10 @@ process.env.SUPABASE_PUBLISHABLE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
 export const STORAGE_BUCKET = 'talma-media';
 
-let adminClient: any = null;
-
-if (SUPABASE_SECRET_KEY) {
-  try {
-    adminClient = createAdminClient();
-  } catch (e) {
-    console.warn('Could not initialize @supabase/server createAdminClient, falling back to @supabase/supabase-js', e);
-  }
-}
-
-if (!adminClient) {
-  adminClient = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-export const supabaseAdmin = adminClient;
+// Create official Supabase admin client for Storage and Database operations
+export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
