@@ -137,6 +137,7 @@ api.post('/upload', async (c) => {
 
     if (!uploadRes.ok) {
       const errJson = await uploadRes.json().catch(() => ({}));
+      console.error('First upload attempt failed:', uploadRes.status, errJson);
       // If bucket does not exist, create bucket and retry
       if (uploadRes.status === 404 || errJson.message?.includes('Bucket')) {
         await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
@@ -167,19 +168,13 @@ api.post('/upload', async (c) => {
       }
 
       if (!uploadRes.ok) {
-        // Try SDK as secondary fallback
-        const sdkRes = await supabaseAdmin.storage
-          .from(STORAGE_BUCKET)
-          .upload(fileName, buffer, {
-            contentType: mimeType,
-            upsert: true,
-          });
-
-        if (sdkRes.error) {
-          const finalErr = await uploadRes.json().catch(() => ({}));
-          console.error('Upload failed on both direct and SDK:', finalErr, sdkRes.error);
-          return c.json({ error: finalErr.message || sdkRes.error.message || 'Error subiendo archivo a Supabase' }, 500);
-        }
+        const retryErr = await uploadRes.json().catch(() => ({}));
+        return c.json({
+          error: 'Upload failed',
+          initialStatus: uploadRes.status,
+          initialErr: errJson,
+          retryErr: retryErr,
+        }, 500);
       }
     }
 
