@@ -167,7 +167,12 @@ api.post('/upload', async (c) => {
       if (!directRes.ok) {
         const directErr = await directRes.json().catch(() => ({}));
         console.error('Direct upload fallback error:', directErr);
-        return c.json({ error: uploadError.message || directErr.message || 'Error subiendo archivo a Supabase' }, 500);
+        return c.json({
+          error: directErr.message || uploadError.message || 'Error subiendo archivo a Supabase',
+          sdkError: uploadError,
+          directStatus: directRes.status,
+          directErr,
+        }, 500);
       }
     }
 
