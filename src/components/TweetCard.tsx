@@ -147,15 +147,21 @@ export const TweetCard: React.FC<TweetCardProps> = ({
     >
       {/* Author Avatar */}
       <div className="shrink-0">
-        <img
-          src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
-          alt={post.author.display_name}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectProfile?.(post.author.username);
-          }}
-          className="w-10 h-10 rounded-full object-cover border border-[#2f3336] hover:opacity-90 transition-opacity"
-        />
+        {post.is_anonymous ? (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border border-[#2f3336] flex items-center justify-center text-lg shadow-inner select-none">
+            🎭
+          </div>
+        ) : (
+          <img
+            src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+            alt={post.author.display_name}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectProfile?.(post.author.username);
+            }}
+            className="w-10 h-10 rounded-full object-cover border border-[#2f3336] hover:opacity-90 transition-opacity"
+          />
+        )}
       </div>
 
       {/* Main post container */}
@@ -163,29 +169,43 @@ export const TweetCard: React.FC<TweetCardProps> = ({
         {/* Header: Author info, timestamp, and menu */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectProfile?.(post.author.username);
-              }}
-              className="font-bold text-[15px] text-[#e7e9ea] hover:underline truncate"
-            >
-              {post.author.display_name}
-            </span>
+            {post.is_anonymous ? (
+              <>
+                <span className="font-bold text-[15px] text-[#e7e9ea] truncate">
+                  {post.anonymous_name || 'Anónimo'}
+                </span>
+                <span className="text-[11px] bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                  🎭 Modo Anónimo
+                </span>
+                <span className="text-[14px] text-[#71767b]">@anonimo</span>
+              </>
+            ) : (
+              <>
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectProfile?.(post.author.username);
+                  }}
+                  className="font-bold text-[15px] text-[#e7e9ea] hover:underline truncate"
+                >
+                  {post.author.display_name}
+                </span>
 
-            {post.author.is_verified && (
-              <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                {post.author.is_verified && (
+                  <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                )}
+
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectProfile?.(post.author.username);
+                  }}
+                  className="text-[14px] text-[#71767b] truncate"
+                >
+                  @{post.author.username}
+                </span>
+              </>
             )}
-
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectProfile?.(post.author.username);
-              }}
-              className="text-[14px] text-[#71767b] truncate"
-            >
-              @{post.author.username}
-            </span>
 
             <span className="text-[14px] text-[#71767b]">·</span>
 

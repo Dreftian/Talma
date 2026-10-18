@@ -54,6 +54,11 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Anonymous posting mode and custom anonymous name
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [anonymousName, setAnonymousName] = useState('Anónimo');
+  const [showAnonymousNameInput, setShowAnonymousNameInput] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const gifInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
@@ -209,12 +214,18 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
         media: mediaList,
         poll: pollData,
         reply_to_id: replyToId,
+        is_anonymous: isAnonymous,
+        anonymous_name: isAnonymous ? (anonymousName.trim() || 'Anónimo') : undefined,
+        anonymous_avatar: isAnonymous ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' : undefined,
       });
 
       setContent('');
       setMediaList([]);
       setShowPoll(false);
       setPollOptions(['', '']);
+      setIsAnonymous(false);
+      setAnonymousName('Anónimo');
+      setShowAnonymousNameInput(false);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -229,13 +240,71 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   return (
     <div className={`flex gap-3 px-4 py-3 border-b border-[#2f3336] bg-black ${compact ? 'border-none p-0' : ''}`}>
       {/* User Avatar */}
-      <img
-        src={currentUser.avatar_url || 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png'}
-        alt={currentUser.display_name}
-        className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
-      />
+      {isAnonymous ? (
+        <div
+          title="Modo Anónimo Activado"
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border-2 border-[#22c55e] flex items-center justify-center text-lg shadow-md shrink-0 select-none animate-pulse"
+        >
+          🎭
+        </div>
+      ) : (
+        <img
+          src={currentUser.avatar_url || 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png'}
+          alt={currentUser.display_name}
+          className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
+        />
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Anonymous Mode Active Notification & Name Editor */}
+        {isAnonymous && (
+          <div className="flex items-center justify-between bg-[#22c55e]/10 border border-[#22c55e]/40 px-3 py-1.5 rounded-xl mb-2 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-base select-none">🎭</span>
+              <span className="text-[#22c55e] font-semibold">Modo Anónimo:</span>
+              {showAnonymousNameInput ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={anonymousName}
+                    onChange={(e) => setAnonymousName(e.target.value)}
+                    placeholder="Escribe el nombre anónimo"
+                    maxLength={30}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setShowAnonymousNameInput(false);
+                    }}
+                    className="bg-black/90 border border-[#22c55e] text-white px-2 py-0.5 rounded text-xs outline-none w-36"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAnonymousNameInput(false)}
+                    className="bg-[#22c55e] text-black px-2 py-0.5 rounded text-[11px] font-bold"
+                  >
+                    OK
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAnonymousNameInput(true)}
+                  className="text-white font-bold bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded transition-colors"
+                  title="Haz clic para modificar el nombre anónimo"
+                >
+                  {anonymousName || 'Anónimo'} ✏️
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAnonymous(false)}
+              className="text-[#71767b] hover:text-white cursor-pointer ml-2"
+              title="Desactivar modo anónimo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         {/* Audience Selector pill */}
         {!compact && (
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#22c55e] border border-[#2f3336] rounded-full px-3 py-1 w-fit mb-2 cursor-pointer hover:bg-[#22c55e]/10 transition-colors">
@@ -483,6 +552,27 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               title="Añadir emoji"
             >
               <Smile className="w-5 h-5" />
+            </button>
+
+            {/* Modo Anónimo Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextState = !isAnonymous;
+                setIsAnonymous(nextState);
+                if (nextState) {
+                  setShowAnonymousNameInput(true);
+                }
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ml-1 ${
+                isAnonymous
+                  ? 'bg-[#22c55e] text-black border-[#22c55e] shadow-sm'
+                  : 'text-[#71767b] border-[#2f3336] hover:text-[#22c55e] hover:border-[#22c55e]/40'
+              }`}
+              title="Publicar en Modo Anónimo y modificar nombre"
+            >
+              <span className="text-xs">🎭</span>
+              <span className="hidden sm:inline">{isAnonymous ? 'Anónimo Activo' : 'Anónimo'}</span>
             </button>
           </div>
 

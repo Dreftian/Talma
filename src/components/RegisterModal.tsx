@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Loader2, Camera, Eye, EyeOff } from 'lucide-react';
+import { X, Loader2, Camera, Eye, EyeOff, Upload, CheckCircle2 } from 'lucide-react';
 import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
 import { uploadMedia } from '../lib/api';
@@ -15,7 +15,9 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   onSuccess,
   onSwitchToLogin,
 }) => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [age, setAge] = useState<string>('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,11 +34,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
     if (!file) return;
 
     setIsUploadingAvatar(true);
+    setError(null);
     try {
       const uploaded = await uploadMedia(file);
       setAvatarUrl(uploaded.url);
     } catch (err: any) {
-      setError('Error al subir foto de perfil: ' + (err.message || ''));
+      setError('Error al subir la foto de perfil a Supabase: ' + (err.message || ''));
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -44,8 +47,35 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !username.trim() || !password) {
-      setError('Por favor completa todos los campos requeridos');
+
+    // Mandatory fields validation
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('El nombre y apellido son obligatorios');
+      return;
+    }
+
+    if (!age || Number(age) < 13 || Number(age) > 120) {
+      setError('Ingresa una edad válida (mínimo 13 años)');
+      return;
+    }
+
+    if (!avatarUrl) {
+      setError('La foto de perfil es obligatoria. Por favor sube una foto.');
+      return;
+    }
+
+    if (!email.trim() || !email.includes('@')) {
+      setError('Ingresa un correo electrónico (Gmail) válido');
+      return;
+    }
+
+    if (!username.trim()) {
+      setError('El nombre de usuario es obligatorio');
+      return;
+    }
+
+    if (!password || password.length < 4) {
+      setError('La contraseña debe tener al menos 4 caracteres');
       return;
     }
 
@@ -53,16 +83,20 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
     setError(null);
 
     try {
-      const cleanUsername = username.trim().replace(/^@/, '');
+      const cleanUsername = username.trim().toLowerCase().replace(/^@/, '').replace(/[^a-z0-9_]/g, '');
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          name: `${firstName.trim()} ${lastName.trim()}`,
+          display_name: `${firstName.trim()} ${lastName.trim()}`,
+          age: Number(age),
           username: cleanUsername,
-          email: email.trim() || `${cleanUsername}@talma.app`,
+          email: email.trim().toLowerCase(),
           password,
-          avatar_url: avatarUrl || undefined,
+          avatar_url: avatarUrl,
         }),
       });
 
@@ -81,8 +115,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#242d34]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-black border border-[#2f3336] rounded-2xl w-full max-w-[500px] p-6 sm:p-8 overflow-hidden shadow-2xl animate-pop-in relative max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 bg-[#242d34]/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-black border border-[#2f3336] rounded-2xl w-full max-w-[520px] p-5 sm:p-7 overflow-hidden shadow-2xl animate-pop-in relative max-h-[94vh] flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -93,45 +127,45 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
         </button>
 
         {/* Center Logo */}
-        <div className="flex justify-center mb-4">
-          <TalmaLogo size="lg" variant="icon" />
+        <div className="flex justify-center mb-3">
+          <TalmaLogo size="md" variant="icon" />
         </div>
 
         {/* Title */}
-        <div className="text-left mb-5">
+        <div className="text-left mb-4">
           <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
             Crea tu cuenta
           </h2>
-          <p className="text-sm text-[#71767b] mt-1">
-            Únete a Talma hoy mismo. Es 100% gratis.
+          <p className="text-xs sm:text-sm text-[#71767b] mt-1">
+            Completa tus datos obligatorios para formar parte de Talma.
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950/60 border border-red-800 text-red-300 text-sm rounded-xl text-left leading-snug">
+          <div className="mb-3 p-3 bg-red-950/60 border border-red-800 text-red-300 text-xs sm:text-sm rounded-xl text-left leading-snug">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 overflow-y-auto pr-1">
-          {/* Avatar selector */}
-          <div className="flex items-center gap-4 py-2">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#16181c] border-2 border-[#2f3336] flex items-center justify-center shrink-0">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 overflow-y-auto pr-1">
+          {/* Avatar selector (OBLIGATORIO) */}
+          <div className="flex items-center gap-4 py-2 px-3 bg-[#16181c] rounded-xl border border-[#2f3336]">
+            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black border-2 border-[#22c55e] flex items-center justify-center shrink-0 shadow-md">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="Avatar preview" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-xl font-bold text-[#71767b]">
-                  {name ? name[0].toUpperCase() : 'T'}
+                <div className="text-center">
+                  <Camera className="w-6 h-6 text-[#22c55e] mx-auto opacity-80" />
                 </div>
               )}
               {isUploadingAvatar && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 text-[#22c55e] animate-spin" />
                 </div>
               )}
             </div>
 
-            <div>
+            <div className="flex-1">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -142,73 +176,125 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1.5 bg-[#16181c] hover:bg-[#202327] border border-[#2f3336] hover:border-[#22c55e] text-[#e7e9ea] rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                disabled={isUploadingAvatar}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                  avatarUrl
+                    ? 'bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/50 hover:bg-[#22c55e]/25'
+                    : 'bg-[#22c55e] text-black border-[#22c55e] hover:bg-[#16a34a]'
+                }`}
               >
-                <Camera className="w-3.5 h-3.5 text-[#22c55e]" />
-                <span>{avatarUrl ? 'Cambiar foto' : 'Subir foto a Supabase'}</span>
+                {avatarUrl ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Cambiar foto</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Subir foto (Obligatorio) *</span>
+                  </>
+                )}
               </button>
-              <p className="text-[11px] text-[#71767b] mt-1">Opcional: puedes añadirla luego</p>
+              <p className="text-[11px] text-[#71767b] mt-1">
+                {avatarUrl ? 'Foto subida con éxito a Supabase' : 'Obligatorio: Sube tu foto de perfil'}
+              </p>
             </div>
           </div>
 
-          {/* Full Name */}
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
-            <label className="text-[11px] text-[#71767b] block font-medium">
-              Nombre y Apellidos
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Dreftian"
-              className="w-full bg-transparent text-white outline-none text-base mt-0.5"
-            />
-          </div>
-
-          {/* Username */}
-          <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
-            <label className="text-[11px] text-[#71767b] block font-medium">
-              Nombre de usuario (@)
-            </label>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[#71767b] text-base select-none">@</span>
+          {/* Nombre y Apellido (Obligatorios) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+              <label className="text-[11px] text-[#71767b] block font-medium">
+                Nombre *
+              </label>
               <input
                 type="text"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                placeholder="dreftian"
-                className="w-full bg-transparent text-white outline-none text-base"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Ej: Daniel"
+                className="w-full bg-transparent text-white outline-none text-sm sm:text-base mt-0.5"
+              />
+            </div>
+
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+              <label className="text-[11px] text-[#71767b] block font-medium">
+                Apellido *
+              </label>
+              <input
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Ej: Reitz"
+                className="w-full bg-transparent text-white outline-none text-sm sm:text-base mt-0.5"
               />
             </div>
           </div>
 
-          {/* Email */}
+          {/* Edad y Nombre de usuario */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+              <label className="text-[11px] text-[#71767b] block font-medium">
+                Edad *
+              </label>
+              <input
+                type="number"
+                required
+                min={13}
+                max={120}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="Ej: 24"
+                className="w-full bg-transparent text-white outline-none text-sm sm:text-base mt-0.5"
+              />
+            </div>
+
+            <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
+              <label className="text-[11px] text-[#71767b] block font-medium">
+                Nombre de usuario (@) *
+              </label>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-[#71767b] text-sm select-none">@</span>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="usuario"
+                  className="w-full bg-transparent text-white outline-none text-sm sm:text-base"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Gmail / Correo electrónico (Obligatorio) */}
           <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
             <label className="text-[11px] text-[#71767b] block font-medium">
-              Correo electrónico
+              Gmail / Correo electrónico *
             </label>
             <input
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
-              className="w-full bg-transparent text-white outline-none text-base mt-0.5"
+              placeholder="tu.cuenta@gmail.com"
+              className="w-full bg-transparent text-white outline-none text-sm sm:text-base mt-0.5"
             />
           </div>
 
-          {/* Password */}
+          {/* Contraseña (Obligatorio) */}
           <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black relative">
             <label className="text-[11px] text-[#71767b] block font-medium">
-              Contraseña
+              Contraseña *
             </label>
             <input
               type={showPassword ? 'text' : 'password'}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent text-white outline-none text-base mt-0.5 pr-8"
+              placeholder="Crea tu contraseña segura"
+              className="w-full bg-transparent text-white outline-none text-sm sm:text-base mt-0.5 pr-8"
             />
             <button
               type="button"
@@ -222,14 +308,14 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
           <button
             type="submit"
             disabled={loading || isUploadingAvatar}
-            className="w-full mt-4 bg-white hover:bg-[#e6e6e6] text-black font-extrabold py-3.5 rounded-full text-base transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+            className="w-full mt-3 bg-white hover:bg-[#e6e6e6] text-black font-extrabold py-3.5 rounded-full text-base transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
           >
             {loading && <Loader2 className="w-5 h-5 animate-spin text-black" />}
-            <span>Crear cuenta</span>
+            <span>Registrarse en Talma</span>
           </button>
         </form>
 
-        <div className="mt-4 pt-3 border-t border-[#2f3336] text-center">
+        <div className="mt-3 pt-3 border-t border-[#2f3336] text-center">
           <p className="text-sm text-[#71767b]">
             ¿Ya tienes una cuenta?{' '}
             <span

@@ -6,9 +6,10 @@ import { UserProfile } from '../types';
 interface AuthModalProps {
   onClose: () => void;
   onLoginSuccess: (user: UserProfile) => void;
+  onSwitchToRegister?: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, onSwitchToRegister }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -151,7 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="border border-[#333639] rounded-md px-3 pt-2 pb-1.5 focus-within:border-[#22c55e] transition-colors bg-black">
             <label className="text-[11px] text-[#71767b] block font-medium">
-              Teléfono, correo o nombre de usuario
+              Gmail, nombre de usuario o número telefónico
             </label>
             <input
               type="text"
@@ -159,7 +160,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
               autoFocus
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full bg-transparent text-white outline-none text-base mt-0.5"
+              placeholder="Gmail, nombre de usuario o teléfono"
+              className="w-full bg-transparent text-white outline-none text-base mt-0.5 placeholder-[#536471]"
             />
           </div>
 
@@ -172,12 +174,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent text-white outline-none text-base mt-0.5 pr-8"
+              placeholder="Tu contraseña"
+              className="w-full bg-transparent text-white outline-none text-base mt-0.5 pr-8 placeholder-[#536471]"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71767b] hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71767b] hover:text-white cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -205,12 +208,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
 
           <p className="text-sm text-[#71767b] mt-4">
             ¿No tienes una cuenta?{' '}
-            <span
-              onClick={() => setIdentifier('admin')}
-              className="text-[#22c55e] hover:underline cursor-pointer font-medium"
+            <button
+              type="button"
+              onClick={() => {
+                if (onSwitchToRegister) {
+                  onSwitchToRegister();
+                } else {
+                  onClose();
+                }
+              }}
+              className="text-[#22c55e] hover:underline cursor-pointer font-bold inline"
             >
               Regístrate
-            </span>
+            </button>
           </p>
         </div>
       </div>

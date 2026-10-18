@@ -28,6 +28,9 @@ export async function createPost(data: {
   media?: MediaAttachment[];
   poll?: any;
   reply_to_id?: string | null;
+  is_anonymous?: boolean;
+  anonymous_name?: string;
+  anonymous_avatar?: string;
 }): Promise<Post> {
   const res = await fetch(`${API_BASE}/api/posts`, {
     method: 'POST',
@@ -199,6 +202,14 @@ export async function toggleFollow(followerId: string, followingId: string): Pro
 
 export async function fetchRecommendations(userId: string): Promise<UserProfile[]> {
   const res = await fetch(`${API_BASE}/api/users/recommendations?userId=${encodeURIComponent(userId)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchRegisteredUsers(userId?: string): Promise<UserProfile[]> {
+  const params = new URLSearchParams();
+  if (userId) params.append('userId', userId);
+  const res = await fetch(`${API_BASE}/api/users?${params.toString()}`);
   if (!res.ok) return [];
   return res.json();
 }

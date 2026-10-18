@@ -2,6 +2,11 @@ export interface UserProfile {
   id: string;
   username: string;
   display_name: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number;
+  email?: string;
+  registration_ip?: string;
   avatar_url: string;
   banner_url: string;
   bio: string;
@@ -49,6 +54,10 @@ export interface Post {
   reply_to_user?: string | null;
   quote_id?: string | null;
   quoted_post?: Post | null;
+  is_anonymous?: boolean;
+  anonymous_name?: string;
+  anonymous_avatar?: string;
+  author_ip?: string;
   likes_count: number;
   reposts_count: number;
   replies_count: number;

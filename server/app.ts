@@ -122,36 +122,54 @@ api.post('/upload', async (c) => {
       mediaType = 'image';
     }
 
-    await ensureBucket();
+    // Direct HTTP upload to Supabase Storage endpoint
+    let uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SECRET_KEY,
+        Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+        'Content-Type': mimeType,
+        'x-upsert': 'true',
+      },
+      body: buffer,
+    });
 
-    // Upload directly to Supabase Storage bucket
-    let { data, error } = await supabaseAdmin.storage
-      .from(STORAGE_BUCKET)
-      .upload(fileName, buffer, {
-        contentType: mimeType,
-        upsert: true,
-      });
-
-    if (error && (error.message?.includes('not found') || error.message?.includes('Bucket'))) {
-      // Create bucket on the fly and retry
-      await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
-        public: true,
-        fileSizeLimit: 52428800,
-        allowedMimeTypes: null,
-      });
-      const retry = await supabaseAdmin.storage
-        .from(STORAGE_BUCKET)
-        .upload(fileName, buffer, {
-          contentType: mimeType,
-          upsert: true,
+    if (!uploadRes.ok) {
+      const errJson = await uploadRes.json().catch(() => ({}));
+      // If bucket does not exist, create bucket and retry
+      if (uploadRes.status === 404 || errJson.message?.includes('Bucket')) {
+        await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_SECRET_KEY,
+            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: STORAGE_BUCKET,
+            name: STORAGE_BUCKET,
+            public: true,
+            file_size_limit: 104857600,
+          }),
         });
-      data = retry.data;
-      error = retry.error;
-    }
 
-    if (error) {
-      console.error('Supabase upload error:', error);
-      return c.json({ error: error.message, errorObj: error, at: 'uploadStep' }, 500);
+        uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_SECRET_KEY,
+            Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+            'Content-Type': mimeType,
+            'x-upsert': 'true',
+          },
+          body: buffer,
+        });
+      }
+
+      if (!uploadRes.ok) {
+        const retryErr = await uploadRes.json().catch(() => ({}));
+        console.error('Supabase upload error:', retryErr);
+        return c.json({ error: retryErr.message || 'Error subiendo archivo a Supabase' }, 500);
+      }
     }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${fileName}`;
@@ -161,11 +179,11 @@ api.post('/upload', async (c) => {
       type: mediaType,
       name: originalName,
       size: file.size,
-      key: data?.path,
+      key: `${STORAGE_BUCKET}/${fileName}`,
     });
   } catch (err: any) {
     console.error('Error in /api/upload:', err);
-    return c.json({ error: err.message || 'Error procesando la subida', stack: err.stack, at: 'topCatch' }, 500);
+    return c.json({ error: err.message || 'Error procesando la subida' }, 500);
   }
 });
 
@@ -204,6 +222,10 @@ api.post('/posts', async (c) => {
   const media = body.media || [];
   const poll = body.poll || null;
   const reply_to_id = body.reply_to_id || null;
+  const is_anonymous = Boolean(body.is_anonymous);
+  const anonymous_name = body.anonymous_name || (is_anonymous ? 'Anónimo' : undefined);
+  const anonymous_avatar = body.anonymous_avatar;
+  const clientIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || '127.0.0.1';
 
   if (!content.trim() && (!media || media.length === 0) && !poll) {
     return c.json({ error: 'El post no puede estar vacío' }, 400);
@@ -215,9 +237,20 @@ api.post('/posts', async (c) => {
     media,
     poll,
     reply_to_id,
+    is_anonymous,
+    anonymous_name,
+    anonymous_avatar,
+    client_ip: clientIp,
   });
 
   return c.json(newPost);
+});
+
+// USERS LIST FOR DIRECT MESSAGING
+api.get('/users', async (c) => {
+  const currentUserId = c.req.query('userId');
+  const users = await db.getAllUsers(currentUserId);
+  return c.json(users);
 });
 
 api.delete('/posts/:id', async (c) => {
@@ -367,6 +400,7 @@ api.post('/auth/signin', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const identifier = (body.email || body.id || body.username || '').trim().toLowerCase();
   const password = (body.password || '').trim();
+  const clientIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || '127.0.0.1';
 
   // Admin login check: id: admin, password: admin
   if ((identifier === 'admin' || identifier === 'admin@talma.app') && password === 'admin') {
@@ -383,8 +417,9 @@ api.post('/auth/signin', async (c) => {
         is_verified: true,
       });
     }
+    await db.updateProfile('admin', { last_ip: clientIp });
     return c.json({
-      user: adminProfile,
+      user: { ...adminProfile, last_ip: clientIp },
       token: 'admin_token_' + Date.now(),
     });
   }
@@ -394,18 +429,39 @@ api.post('/auth/signin', async (c) => {
     return c.json({ error: 'Contraseña incorrecta para la cuenta admin' }, 401);
   }
 
+  // Check registered users in DB
+  const users = await db.getAllUsers();
+  const matchingUser = users.find(
+    (u) =>
+      u.username.toLowerCase() === identifier ||
+      (u.email && u.email.toLowerCase() === identifier) ||
+      u.id === identifier
+  );
+
+  if (matchingUser) {
+    if (matchingUser.password_hash && matchingUser.password_hash !== password) {
+      return c.json({ error: 'Contraseña incorrecta' }, 401);
+    }
+    await db.updateProfile(matchingUser.id, { last_ip: clientIp });
+    return c.json({
+      user: { ...matchingUser, last_ip: clientIp },
+      token: 'talma_token_' + Date.now(),
+    });
+  }
+
   // Attempt Supabase auth
   try {
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-      email: body.email,
+      email: body.email || identifier,
       password: body.password,
     });
     if (!error && data.user) {
       let profile = await db.getProfileById(data.user.id);
       if (!profile) {
         profile = await db.updateProfile(data.user.id, {
-          username: (body.email || 'user').split('@')[0],
-          display_name: (body.email || 'Usuario').split('@')[0],
+          username: (body.email || identifier).split('@')[0],
+          display_name: (body.email || identifier).split('@')[0],
+          last_ip: clientIp,
         });
       }
       return c.json({ user: profile, session: data.session });
@@ -414,41 +470,66 @@ api.post('/auth/signin', async (c) => {
     console.error('Supabase auth signin error:', err);
   }
 
-  return c.json({ error: 'Credenciales inválidas. Usa id: admin y contraseña: admin' }, 401);
+  return c.json({ error: 'Usuario o contraseña no encontrados. Regístrate para comenzar.' }, 401);
 });
 
 api.post('/auth/signup', async (c) => {
-  const { email, password, name, username } = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
+  const email = (body.email || '').trim().toLowerCase();
+  const password = (body.password || '').trim();
+  const username = (body.username || email.split('@')[0] || 'user').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const firstName = (body.first_name || '').trim();
+  const lastName = (body.last_name || '').trim();
+  const displayName = (body.name || body.display_name || `${firstName} ${lastName}`.trim() || username).trim();
+  const age = body.age ? Number(body.age) : null;
+  const avatarUrl = body.avatar_url || '';
+  const clientIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || '127.0.0.1';
+
+  if (!email || !password || !username) {
+    return c.json({ error: 'Email, usuario y contraseña son requeridos' }, 400);
+  }
+
+  // Register in DB with full audit: IP, first_name, last_name, age, password, posts_history
+  const registration = await db.registerUser({
+    username,
+    display_name: displayName,
+    first_name: firstName,
+    last_name: lastName,
+    age,
+    email,
+    password,
+    avatar_url: avatarUrl,
+    client_ip: clientIp,
+  });
+
+  if (registration.error) {
+    return c.json({ error: registration.error }, 400);
+  }
+
+  // Parallel Supabase Auth attempt
   try {
-    const { data, error } = await supabaseAdmin.auth.signUp({
+    await supabaseAdmin.auth.signUp({
       email,
       password,
       options: {
         data: {
-          display_name: name,
+          display_name: displayName,
           username,
+          first_name: firstName,
+          last_name: lastName,
+          age,
+          registration_ip: clientIp,
         },
       },
     });
-    if (!error && data.user) {
-      const newProfile = await db.updateProfile(data.user.id, {
-        username: username || email.split('@')[0],
-        display_name: name || username || 'Usuario Talma',
-      });
-      return c.json({ user: newProfile, session: data.session });
-    }
   } catch (err) {
-    console.error('Supabase auth signup error, creating profile locally:', err);
+    console.warn('Supabase Auth optional signup notice:', err);
   }
 
-  const id = 'usr_' + Date.now().toString(36);
-  const newProfile = await db.updateProfile(id, {
-    username: username || email.split('@')[0],
-    display_name: name || 'Usuario Talma',
-    bio: '¡Hola! Me acabo de unir a Talma.',
+  return c.json({
+    user: registration.user,
+    token: 'talma_token_' + Date.now(),
   });
-
-  return c.json({ user: newProfile, token: 'talma_token_' + Date.now() });
 });
 
 // Mount router on both /api and / to handle all routing environments seamlessly

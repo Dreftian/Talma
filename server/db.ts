@@ -8,6 +8,14 @@ export interface UserProfile {
   id: string;
   username: string;
   display_name: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number | null;
+  email?: string;
+  password_hash?: string;
+  registration_ip?: string;
+  last_ip?: string;
+  posts_history?: string[];
   avatar_url: string;
   banner_url: string;
   bio: string;
@@ -35,6 +43,7 @@ export interface PollData {
   ends_at: string;
   total_votes: number;
   voters?: { [userId: string]: number };
+  user_voted_option?: number | null;
 }
 
 export interface PostItem {
@@ -45,6 +54,10 @@ export interface PostItem {
   poll?: PollData | null;
   reply_to_id?: string | null;
   quote_id?: string | null;
+  is_anonymous?: boolean;
+  anonymous_name?: string;
+  anonymous_avatar?: string;
+  author_ip?: string;
   likes_count: number;
   reposts_count: number;
   replies_count: number;
@@ -135,14 +148,14 @@ const INITIAL_DB: DatabaseSchema = {
 let memoryDb: DatabaseSchema | null = null;
 
 function readDb(): DatabaseSchema {
-  if (memoryDb && memoryDb.profiles && memoryDb.profiles.some((p) => p.id === 'admin') && memoryDb.profiles.length === 1) {
+  if (memoryDb && memoryDb.profiles && memoryDb.profiles.some((p) => p.id === 'admin')) {
     return memoryDb;
   }
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
       const parsed = JSON.parse(data);
-      if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin') && parsed.profiles.length === 1) {
+      if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin')) {
         memoryDb = parsed;
         return memoryDb!;
       }
@@ -252,18 +265,96 @@ export const db = {
     return state.profiles[index];
   },
 
+  getAllUsers: async (currentUserId?: string): Promise<UserProfile[]> => {
+    const state = readDb();
+    return state.profiles.filter((p) => !currentUserId || p.id !== currentUserId);
+  },
+
+  registerUser: async (data: {
+    username: string;
+    display_name: string;
+    first_name?: string;
+    last_name?: string;
+    age?: number | null;
+    email: string;
+    password: string;
+    avatar_url?: string;
+    client_ip?: string;
+  }): Promise<{ user: UserProfile; error?: string }> => {
+    const state = readDb();
+    const cleanUsername = data.username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (state.profiles.some((p) => p.username.toLowerCase() === cleanUsername)) {
+      return { user: null as any, error: 'El nombre de usuario ya está en uso' };
+    }
+
+    const userId = 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+    const newProfile: UserProfile = {
+      id: userId,
+      username: cleanUsername,
+      display_name: data.display_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || cleanUsername,
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      age: data.age ? Number(data.age) : null,
+      email: data.email || '',
+      password_hash: data.password,
+      registration_ip: data.client_ip || '',
+      last_ip: data.client_ip || '',
+      posts_history: [],
+      avatar_url:
+        data.avatar_url ||
+        `https://api.dicebear.com/7.x/identicon/svg?seed=${cleanUsername}`,
+      banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      bio: '¡Hola! Me acabo de unir a Talma 🚀',
+      location: '',
+      website: '',
+      is_verified: false,
+      followers_count: 0,
+      following_count: 0,
+      joined_at: new Date().toISOString(),
+    };
+
+    state.profiles.push(newProfile);
+    writeDb(state);
+
+    if (supabaseDbAvailable) {
+      await supabaseAdmin.from('profiles').insert(newProfile);
+    }
+
+    return { user: newProfile };
+  },
+
   // POSTS
   getPosts: async (currentUserId?: string): Promise<any[]> => {
     const state = readDb();
     // Return posts with author profile and user reaction states
     const postsWithDetails = state.posts.map((post) => {
-      const author = state.profiles.find((p) => p.id === post.user_id) || {
+      const realAuthor = state.profiles.find((p) => p.id === post.user_id) || {
         id: post.user_id,
         username: 'unknown',
         display_name: 'Usuario Talma',
         avatar_url: '',
         is_verified: false,
       };
+
+      const author = post.is_anonymous
+        ? {
+            id: post.user_id,
+            username: 'anonimo',
+            display_name: post.anonymous_name || 'Anónimo',
+            avatar_url:
+              post.anonymous_avatar ||
+              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+            banner_url: '',
+            bio: 'Publicación realizada en Modo Anónimo 🎭',
+            location: 'Secreto',
+            website: '',
+            is_verified: false,
+            followers_count: 0,
+            following_count: 0,
+            joined_at: post.created_at,
+          }
+        : realAuthor;
+
       const is_liked = currentUserId ? state.likes.some((l) => l.user_id === currentUserId && l.post_id === post.id) : false;
       const is_reposted = currentUserId ? state.reposts.some((r) => r.user_id === currentUserId && r.post_id === post.id) : false;
       const is_bookmarked = currentUserId ? state.bookmarks.some((b) => b.user_id === currentUserId && b.post_id === post.id) : false;
@@ -293,13 +384,32 @@ export const db = {
     const post = state.posts.find((p) => p.id === id);
     if (!post) return null;
 
-    const author = state.profiles.find((p) => p.id === post.user_id) || {
+    const realAuthor = state.profiles.find((p) => p.id === post.user_id) || {
       id: post.user_id,
       username: 'unknown',
       display_name: 'Usuario Talma',
       avatar_url: '',
       is_verified: false,
     };
+
+    const author = post.is_anonymous
+      ? {
+          id: post.user_id,
+          username: 'anonimo',
+          display_name: post.anonymous_name || 'Anónimo',
+          avatar_url:
+            post.anonymous_avatar ||
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+          banner_url: '',
+          bio: 'Publicación realizada en Modo Anónimo 🎭',
+          location: 'Secreto',
+          website: '',
+          is_verified: false,
+          followers_count: 0,
+          following_count: 0,
+          joined_at: post.created_at,
+        }
+      : realAuthor;
 
     const is_liked = currentUserId ? state.likes.some((l) => l.user_id === currentUserId && l.post_id === post.id) : false;
     const is_reposted = currentUserId ? state.reposts.some((r) => r.user_id === currentUserId && r.post_id === post.id) : false;
@@ -309,7 +419,17 @@ export const db = {
     const replies = state.posts
       .filter((p) => p.reply_to_id === id)
       .map((reply) => {
-        const replyAuthor = state.profiles.find((p) => p.id === reply.user_id) || author;
+        const replyAuthor = reply.is_anonymous
+          ? {
+              id: reply.user_id,
+              username: 'anonimo',
+              display_name: reply.anonymous_name || 'Anónimo',
+              avatar_url:
+                reply.anonymous_avatar ||
+                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+              is_verified: false,
+            }
+          : state.profiles.find((p) => p.id === reply.user_id) || author;
         return {
           ...reply,
           author: replyAuthor,
@@ -334,6 +454,10 @@ export const db = {
     media?: MediaItem[];
     poll?: any;
     reply_to_id?: string | null;
+    is_anonymous?: boolean;
+    anonymous_name?: string;
+    anonymous_avatar?: string;
+    client_ip?: string;
   }): Promise<any> => {
     const state = readDb();
     const newPost: PostItem = {
@@ -357,6 +481,10 @@ export const db = {
         : null,
       reply_to_id: data.reply_to_id || null,
       quote_id: null,
+      is_anonymous: Boolean(data.is_anonymous),
+      anonymous_name: data.anonymous_name || (data.is_anonymous ? 'Anónimo' : undefined),
+      anonymous_avatar: data.anonymous_avatar,
+      author_ip: data.client_ip || '',
       likes_count: 0,
       reposts_count: 0,
       replies_count: 0,
@@ -366,6 +494,14 @@ export const db = {
     };
 
     state.posts.unshift(newPost);
+
+    // Track in user profile ("registro de lo que publicaron")
+    const authorProfile = state.profiles.find((p) => p.id === data.user_id);
+    if (authorProfile) {
+      if (!authorProfile.posts_history) authorProfile.posts_history = [];
+      authorProfile.posts_history.unshift(newPost.id);
+      if (data.client_ip) authorProfile.last_ip = data.client_ip;
+    }
 
     // If it's a reply, increment parent's replies_count
     if (data.reply_to_id) {
@@ -381,7 +517,25 @@ export const db = {
       await supabaseAdmin.from('posts').insert(newPost);
     }
 
-    const author = state.profiles.find((p) => p.id === newPost.user_id);
+    const author = newPost.is_anonymous
+      ? {
+          id: newPost.user_id,
+          username: 'anonimo',
+          display_name: newPost.anonymous_name || 'Anónimo',
+          avatar_url:
+            newPost.anonymous_avatar ||
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+          banner_url: '',
+          bio: 'Publicación realizada en Modo Anónimo 🎭',
+          location: 'Secreto',
+          website: '',
+          is_verified: false,
+          followers_count: 0,
+          following_count: 0,
+          joined_at: newPost.created_at,
+        }
+      : authorProfile;
+
     return {
       ...newPost,
       author,

@@ -121,30 +121,52 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
       <div className="p-4 border-b border-[#2f3336]">
         {/* Author info */}
         <div className="flex items-center gap-3">
-          <img
-            src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
-            alt={post.author.display_name}
-            onClick={() => onSelectProfile(post.author.username)}
-            className="w-12 h-12 rounded-full object-cover border border-[#2f3336] cursor-pointer hover:opacity-90"
-          />
-          <div className="flex flex-col leading-tight">
-            <div className="flex items-center gap-1">
-              <span
-                onClick={() => onSelectProfile(post.author.username)}
-                className="font-bold text-[16px] text-white hover:underline cursor-pointer"
-              >
-                {post.author.display_name}
-              </span>
-              {post.author.is_verified && (
-                <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
-              )}
+          {post.is_anonymous ? (
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border border-[#2f3336] flex items-center justify-center text-xl shadow-inner select-none shrink-0">
+              🎭
             </div>
-            <span
+          ) : (
+            <img
+              src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+              alt={post.author.display_name}
               onClick={() => onSelectProfile(post.author.username)}
-              className="text-[14px] text-[#71767b] hover:underline cursor-pointer"
-            >
-              @{post.author.username}
-            </span>
+              className="w-12 h-12 rounded-full object-cover border border-[#2f3336] cursor-pointer hover:opacity-90 shrink-0"
+            />
+          )}
+          <div className="flex flex-col leading-tight">
+            {post.is_anonymous ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[16px] text-white">
+                    {post.anonymous_name || 'Anónimo'}
+                  </span>
+                  <span className="text-[11px] bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-full font-bold">
+                    🎭 Modo Anónimo
+                  </span>
+                </div>
+                <span className="text-[14px] text-[#71767b]">@anonimo</span>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1">
+                  <span
+                    onClick={() => onSelectProfile(post.author.username)}
+                    className="font-bold text-[16px] text-white hover:underline cursor-pointer"
+                  >
+                    {post.author.display_name}
+                  </span>
+                  {post.author.is_verified && (
+                    <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                  )}
+                </div>
+                <span
+                  onClick={() => onSelectProfile(post.author.username)}
+                  className="text-[14px] text-[#71767b] hover:underline cursor-pointer"
+                >
+                  @{post.author.username}
+                </span>
+              </>
+            )}
           </div>
         </div>
 

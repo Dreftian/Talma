@@ -10,6 +10,7 @@ import { MessagesView } from './components/MessagesView';
 import { ExploreView } from './components/ExploreView';
 import { NotificationsView } from './components/NotificationsView';
 import { AuthModal } from './components/AuthModal';
+import { RegisterModal } from './components/RegisterModal';
 import { MobileDrawer } from './components/MobileDrawer';
 import { LandingView } from './components/LandingView';
 import { Post, UserProfile } from './types';
@@ -41,6 +42,7 @@ export default function App() {
   const [selectedProfileUsername, setSelectedProfileUsername] = useState<string | null>(null);
   const [chatWithUser, setChatWithUser] = useState<UserProfile | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showComposerModal, setShowComposerModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
@@ -91,6 +93,7 @@ export default function App() {
   };
 
   const handleDeletePost = async (postId: string) => {
+    if (!currentUser) return;
     try {
       await deletePost(postId, currentUser.id);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
@@ -411,6 +414,26 @@ export default function App() {
             setCurrentUser(user);
             setShowAuthModal(false);
             loadFeed();
+          }}
+          onSwitchToRegister={() => {
+            setShowAuthModal(false);
+            setShowRegisterModal(true);
+          }}
+        />
+      )}
+
+      {/* Register Modal */}
+      {showRegisterModal && (
+        <RegisterModal
+          onClose={() => setShowRegisterModal(false)}
+          onSuccess={(user) => {
+            setCurrentUser(user);
+            setShowRegisterModal(false);
+            loadFeed();
+          }}
+          onSwitchToLogin={() => {
+            setShowRegisterModal(false);
+            setShowAuthModal(true);
           }}
         />
       )}

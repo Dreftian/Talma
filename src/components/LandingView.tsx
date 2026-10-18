@@ -151,6 +151,10 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginSuccess }) => {
             setShowAuthModal(false);
             onLoginSuccess(user);
           }}
+          onSwitchToRegister={() => {
+            setShowAuthModal(false);
+            setShowRegisterModal(true);
+          }}
         />
       )}
 

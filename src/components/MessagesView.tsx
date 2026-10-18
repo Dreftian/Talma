@@ -15,7 +15,7 @@ import {
   fetchMessages,
   sendMessage,
   uploadMedia,
-  fetchRecommendations,
+  fetchRegisteredUsers,
 } from '../lib/api';
 import { formatRelativeTime } from '../lib/utils';
 
@@ -68,7 +68,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
   useEffect(() => {
     loadConversations();
-    fetchRecommendations(currentUser.id).then((users) => setAllUsers(users)).catch(() => {});
+    fetchRegisteredUsers(currentUser.id)
+      .then((users) => setAllUsers(users.filter((u) => u.id !== currentUser.id)))
+      .catch(() => {});
   }, [currentUser.id]);
 
   useEffect(() => {
@@ -158,8 +160,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="p-8 text-center text-[#71767b] text-sm">
-              No tienes mensajes aún. ¡Comienza una conversación!
+            <div className="p-8 text-center text-[#71767b] text-sm flex flex-col items-center">
+              <p>No tienes mensajes aún.</p>
+              <button
+                type="button"
+                onClick={() => setShowNewChatModal(true)}
+                className="mt-4 px-4 py-2 bg-[#22c55e] text-black font-bold text-xs rounded-full hover:bg-[#16a34a] transition-colors cursor-pointer"
+              >
+                Escribir a un usuario registrado
+              </button>
             </div>
           ) : (
             conversations.map((conv) => {
@@ -365,38 +374,52 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* New Chat Modal */}
       {showNewChatModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-black border border-[#2f3336] rounded-2xl w-full max-w-md p-4 animate-pop-in">
+          <div className="bg-black border border-[#2f3336] rounded-2xl w-full max-w-md p-5 animate-pop-in shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-[#2f3336]">
-              <h3 className="font-bold text-lg text-white">Nuevo mensaje</h3>
+              <div>
+                <h3 className="font-extrabold text-lg text-white">Nuevo mensaje</h3>
+                <p className="text-xs text-[#71767b]">Usuarios registrados en Talma</p>
+              </div>
               <button
                 onClick={() => setShowNewChatModal(false)}
-                className="text-[#71767b] hover:text-white p-1 rounded-full"
+                className="text-[#71767b] hover:text-white p-1 rounded-full cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="py-2 max-h-80 overflow-y-auto flex flex-col gap-1">
-              {allUsers.map((u) => (
-                <div
-                  key={u.id}
-                  onClick={() => {
-                    setActiveUser(u);
-                    setShowNewChatModal(false);
-                  }}
-                  className="flex items-center gap-3 p-3 hover:bg-[#16181c] rounded-xl cursor-pointer"
-                >
-                  <img
-                    src={u.avatar_url}
-                    alt=""
-                    className="w-10 h-10 rounded-full object-cover border border-[#2f3336]"
-                  />
-                  <div>
-                    <span className="font-bold text-sm text-white">{u.display_name}</span>
-                    <span className="text-xs text-[#71767b] block">@{u.username}</span>
-                  </div>
+            <div className="py-2 max-h-80 overflow-y-auto flex flex-col gap-1 mt-2">
+              {allUsers.length === 0 ? (
+                <div className="p-6 text-center text-[#71767b] text-sm">
+                  No hay otros usuarios registrados todavía.
                 </div>
-              ))}
+              ) : (
+                allUsers.map((u) => (
+                  <div
+                    key={u.id}
+                    onClick={() => {
+                      setActiveUser(u);
+                      setShowNewChatModal(false);
+                    }}
+                    className="flex items-center gap-3 p-3 hover:bg-[#16181c] rounded-xl cursor-pointer transition-colors"
+                  >
+                    <img
+                      src={u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover border border-[#2f3336]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-sm text-white truncate">{u.display_name}</span>
+                        {u.is_verified && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                        )}
+                      </div>
+                      <span className="text-xs text-[#71767b] block truncate">@{u.username}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
