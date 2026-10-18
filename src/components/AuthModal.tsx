@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, ShieldCheck, Key } from 'lucide-react';
 import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
 
@@ -9,11 +9,8 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('admin');
+  const [password, setPassword] = useState('admin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,18 +19,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
     setLoading(true);
     setError(null);
 
-    const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/signin';
-    const payload = isSignUp ? { email, password, name, username } : { email, password };
-
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email: identifier, id: identifier, username: identifier, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Error al autenticar');
+        throw new Error(data.error || 'Credenciales incorrectas');
       }
       onLoginSuccess(data.user);
       onClose();
@@ -44,14 +38,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
     }
   };
 
-  const handleSelectDemoAccount = (demoId: string) => {
-    fetch(`/api/users/me?userId=${demoId}`)
+  const handleAdminQuickLogin = () => {
+    setIdentifier('admin');
+    setPassword('admin');
+    setLoading(true);
+    setError(null);
+
+    fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'admin', password: 'admin' }),
+    })
       .then((r) => r.json())
-      .then((user) => {
-        onLoginSuccess(user);
-        onClose();
+      .then((data) => {
+        if (data.user) {
+          onLoginSuccess(data.user);
+          onClose();
+        } else {
+          setError(data.error || 'Error al autenticar admin');
+        }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => setError(err.message || 'Error de red'))
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -67,68 +75,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
         <div className="flex flex-col items-center text-center mt-2">
           <TalmaLogo size="xl" variant="icon" />
           <h2 className="font-black text-2xl text-white mt-4">
-            {isSignUp ? 'Únete a Talma hoy' : 'Inicia sesión en Talma'}
+            Inicia sesión en Talma
           </h2>
           <p className="text-sm text-[#71767b] mt-1">
-            Conectado directamente a tu proyecto de Supabase
+            Plataforma 100% gratuita · Conectada a Supabase
           </p>
         </div>
 
+        {/* Admin Credential Notice */}
+        <div className="mt-4 p-3 bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl flex items-center gap-3">
+          <ShieldCheck className="w-6 h-6 text-[#22c55e] shrink-0" />
+          <div className="text-left text-xs leading-tight">
+            <span className="font-bold text-white block">Cuenta de Administrador:</span>
+            <span className="text-[#e7e9ea] font-mono mt-0.5 inline-block">ID: <b className="text-[#22c55e]">admin</b> &nbsp;|&nbsp; Contraseña: <b className="text-[#22c55e]">admin</b></span>
+          </div>
+        </div>
+
         {error && (
-          <div className="mt-4 p-2.5 bg-red-950/40 border border-red-800 text-red-400 text-sm rounded-lg text-center">
+          <div className="mt-3 p-2.5 bg-red-950/40 border border-red-800 text-red-400 text-sm rounded-lg text-center">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
-          {isSignUp && (
-            <>
-              <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e]">
-                <label className="text-xs text-[#71767b] block">Nombre completo</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej. Dreftian"
-                  className="w-full bg-transparent text-[#e7e9ea] outline-none text-sm mt-0.5"
-                />
-              </div>
-
-              <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e]">
-                <label className="text-xs text-[#71767b] block">Nombre de usuario</label>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="dreftian"
-                  className="w-full bg-transparent text-[#e7e9ea] outline-none text-sm mt-0.5"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e]">
-            <label className="text-xs text-[#71767b] block">Correo electrónico</label>
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+          <div className="border border-[#2f3336] rounded-lg p-2.5 focus-within:border-[#22c55e] transition-colors">
+            <label className="text-xs text-[#71767b] block font-medium">ID o Usuario</label>
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nombre@ejemplo.com"
-              className="w-full bg-transparent text-[#e7e9ea] outline-none text-sm mt-0.5"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="admin"
+              className="w-full bg-transparent text-[#e7e9ea] outline-none text-sm mt-0.5 font-medium"
             />
           </div>
 
-          <div className="border border-[#2f3336] rounded-lg p-2 focus-within:border-[#22c55e]">
-            <label className="text-xs text-[#71767b] block">Contraseña</label>
+          <div className="border border-[#2f3336] rounded-lg p-2.5 focus-within:border-[#22c55e] transition-colors">
+            <label className="text-xs text-[#71767b] block font-medium">Contraseña</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="admin"
               className="w-full bg-transparent text-[#e7e9ea] outline-none text-sm mt-0.5"
             />
           </div>
@@ -136,46 +125,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess })
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 bg-[#22c55e] hover:bg-[#16a34a] text-black font-extrabold py-3 rounded-full text-base transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+            className="w-full mt-2 bg-[#22c55e] hover:bg-[#16a34a] text-black font-extrabold py-3 rounded-full text-base transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer"
           >
             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-            <span>{isSignUp ? 'Crear cuenta' : 'Iniciar sesión'}</span>
+            <span>Iniciar sesión</span>
           </button>
         </form>
 
-        <div className="mt-4 text-center">
+        {/* 1-Click Fast Login for Admin */}
+        <div className="mt-5 pt-4 border-t border-[#2f3336]">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-[#22c55e] hover:underline"
+            onClick={handleAdminQuickLogin}
+            disabled={loading}
+            className="w-full py-2.5 px-4 bg-[#16181c] hover:bg-[#202327] border border-[#2f3336] hover:border-[#22c55e]/50 rounded-xl text-sm font-bold text-[#e7e9ea] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
-            {isSignUp
-              ? '¿Ya tienes una cuenta? Inicia sesión'
-              : '¿No tienes cuenta? Regístrate'}
+            <Key className="w-4 h-4 text-[#22c55e]" />
+            <span>⚡ Ingreso rápido como Admin (admin / admin)</span>
           </button>
-        </div>
-
-        {/* Quick test accounts */}
-        <div className="mt-6 pt-4 border-t border-[#2f3336]">
-          <span className="text-xs text-[#71767b] font-medium block text-center mb-2">
-            O selecciona una cuenta de prueba instantánea:
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { id: 'usr_dreftian', name: 'Dreftian (@dreftian)' },
-              { id: 'usr_talma', name: 'Talma Oficial' },
-              { id: 'usr_supabase', name: 'Supabase' },
-              { id: 'usr_elonmusk', name: 'Elon Musk' },
-            ].map((acc) => (
-              <button
-                key={acc.id}
-                onClick={() => handleSelectDemoAccount(acc.id)}
-                className="text-xs py-1.5 px-2 bg-[#16181c] hover:bg-[#202327] text-[#e7e9ea] rounded-lg border border-[#2f3336] truncate"
-              >
-                {acc.name}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>

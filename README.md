@@ -40,12 +40,24 @@ Talma es una red social full-stack inspirada al 100% en el diseño, fluidez y ex
      - **Perfil de Usuario**:
        - Banner, avatar con borde circular, biografía, ubicación, sitio web y fecha de registro
        - Modal para editar perfil subiendo banner y avatar directamente a Supabase Storage
-  3. **Barra Lateral Derecha**:
-     - Buscador sticky con filtro en tiempo real
-     - Tarjeta de suscripción "Talma Premium"
-     - Sección "Qué está pasando" (Trending topics con categorías y conteos)
-     - Sección "A quién seguir" (Recomendaciones de cuentas con botón Seguir/Siguiendo)
-     - Enlaces legales de pie de página
+### 🔐 Acceso de Administrador y Cuenta Única
+- **ID / Usuario**: `admin`
+- **Contraseña**: `admin`
+- **100% Gratuito y Libre**: Sin suscripciones VIP ni muros de pago. Sube fotos, videos en alta definición, notas de voz y GIFs ilimitados a Supabase Storage con total libertad.
+- **Perfiles limpios**: Únicamente la cuenta oficial de administración está activa por defecto.
+
+### 🎨 Experiencia Adaptada por Dispositivo
+- **Versión de Escritorio (Desktop)**:
+  - Diseño 100% fiel a la **versión Web de "X"** en 3 columnas.
+  - Barra lateral izquierda de navegación con logo interactivo y botón "Postear".
+  - Columna central con pestañas "Para ti" y "Siguiendo", compositor multimedia con Supabase Storage.
+  - Barra lateral derecha con barra de búsqueda, "Qué está pasando" (Trending topics) e información del sistema.
+- **Versión Móvil (Mobile)**:
+  - Diseño 100% idéntico a la **aplicación móvil de "X"**.
+  - **Barra superior**: Avatar de perfil a la izquierda, logo centrado de Talma y botón de ajustes. Al tocar el avatar se despliega el menú lateral deslizante (Drawer).
+  - **Menú Lateral Deslizante (Drawer)**: Muestra perfil de admin, estadísticas (Siguiendo/Seguidores), y accesos a Perfil, Guardados, Explorar, Notificaciones y DMs.
+  - **Barra de navegación inferior fija**: 4 accesos rápidos (Inicio, Explorar, Notificaciones con badge, Mensajes).
+  - **Botón Flotante de Acción (FAB)**: Botón circular en la esquina inferior derecha para componer publicaciones en un toque.
 
 ---
 

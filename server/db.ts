@@ -76,67 +76,25 @@ interface DatabaseSchema {
 const INITIAL_DB: DatabaseSchema = {
   profiles: [
     {
-      id: 'usr_dreftian',
-      username: 'dreftian',
-      display_name: 'Dreftian',
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
-      banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-      bio: 'Arquitecto y Desarrollador Full-Stack 🚀 Construyendo Talma sobre Supabase.',
-      location: 'Lima, Perú',
-      website: 'https://talma.app',
-      is_verified: true,
-      followers_count: 1420,
-      following_count: 380,
-      joined_at: '2026-01-15T00:00:00Z',
-    },
-    {
-      id: 'usr_talma',
-      username: 'talma_oficial',
-      display_name: 'Talma',
+      id: 'admin',
+      username: 'admin',
+      display_name: 'Admin',
       avatar_url: `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/logo-talma.png`,
-      banner_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
-      bio: 'La red social en tiempo real. Rápida, libre y respaldada por Supabase Storage & Database.',
+      banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      bio: 'Cuenta Oficial de Administración de Talma 🚀 Plataforma social en tiempo real sobre Supabase. 100% gratuita y sin suscripciones VIP.',
       location: 'Global',
       website: 'https://talma.app',
       is_verified: true,
-      followers_count: 85200,
-      following_count: 42,
+      followers_count: 0,
+      following_count: 0,
       joined_at: '2026-01-01T00:00:00Z',
-    },
-    {
-      id: 'usr_supabase',
-      username: 'supabase',
-      display_name: 'Supabase',
-      avatar_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      banner_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
-      bio: 'The open source Firebase alternative. Postgres, Auth, Realtime, Storage, Functions.',
-      location: 'San Francisco, CA',
-      website: 'https://supabase.com',
-      is_verified: true,
-      followers_count: 245000,
-      following_count: 120,
-      joined_at: '2020-03-01T00:00:00Z',
-    },
-    {
-      id: 'usr_elonmusk',
-      username: 'elonmusk',
-      display_name: 'Elon Musk',
-      avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80',
-      banner_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      bio: 'Occupy Mars. The future will be exciting!',
-      location: 'Starbase, TX',
-      website: 'https://x.com',
-      is_verified: true,
-      followers_count: 180000000,
-      following_count: 650,
-      joined_at: '2009-06-02T00:00:00Z',
     },
   ],
   posts: [
     {
       id: 'post_1',
-      user_id: 'usr_talma',
-      content: '¡Bienvenidos a Talma! 🚀 La plataforma social conectada 100% con Supabase para almacenamiento de fotos, videos, audios y mensajes en tiempo real. Diseñada al estilo más puro y elegante de X.',
+      user_id: 'admin',
+      content: '¡Bienvenidos a Talma! 🚀 La plataforma social abierta, 100% gratuita y sin suscripciones VIP. Toda la potencia de Supabase para fotos, videos, audios y mensajes en tiempo real. Diseñada al estilo más puro de X.',
       media: [
         {
           id: 'med_logo',
@@ -145,103 +103,49 @@ const INITIAL_DB: DatabaseSchema = {
           name: 'Talma Logo',
         },
       ],
-      poll: null,
-      reply_to_id: null,
-      quote_id: null,
-      likes_count: 342,
-      reposts_count: 89,
-      replies_count: 24,
-      views_count: 4890,
-      bookmarks_count: 45,
-      created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    },
-    {
-      id: 'post_2',
-      user_id: 'usr_dreftian',
-      content: 'Acabamos de implementar la subida multimedia completa en @supabase. ¡Prueba a subir una foto, un video o un archivo de audio directamente en el compositor!',
-      media: [],
       poll: {
         id: 'poll_1',
-        question: '¿Qué opinas de la fluidez y diseño de Talma?',
+        question: '¿Qué opinas del diseño 100% fiel a X y la velocidad de Talma?',
         options: [
-          { id: 1, text: '¡Increíble y súper rápida! 🔥', votes: 420 },
-          { id: 2, text: 'Idéntica a X pero más limpia ⚡', votes: 310 },
-          { id: 3, text: 'El soporte de Supabase es top 🐘', votes: 215 },
+          { id: 1, text: '¡Increíble y súper rápida! 🔥', votes: 42 },
+          { id: 2, text: 'Idéntica a X pero más limpia ⚡', votes: 31 },
+          { id: 3, text: 'El soporte de Supabase es top 🐘', votes: 25 },
         ],
-        ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
-        total_votes: 945,
+        ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(),
+        total_votes: 98,
         voters: {},
       },
       reply_to_id: null,
       quote_id: null,
-      likes_count: 189,
-      reposts_count: 45,
-      replies_count: 12,
-      views_count: 3200,
-      bookmarks_count: 18,
-      created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    },
-    {
-      id: 'post_3',
-      user_id: 'usr_supabase',
-      content: 'Welcome to the Supabase ecosystem @talma_oficial! Great to see PostgreSQL and Storage powering next-generation social experiences with instant real-time capability.',
-      media: [
-        {
-          id: 'med_supa',
-          url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80',
-          type: 'image',
-          name: 'Code',
-        },
-      ],
-      poll: null,
-      reply_to_id: null,
-      quote_id: null,
-      likes_count: 852,
-      reposts_count: 194,
-      replies_count: 38,
-      views_count: 12400,
-      bookmarks_count: 92,
-      created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+      likes_count: 48,
+      reposts_count: 14,
+      replies_count: 6,
+      views_count: 890,
+      bookmarks_count: 12,
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     },
   ],
-  likes: [
-    { user_id: 'usr_dreftian', post_id: 'post_1', created_at: new Date().toISOString() },
-  ],
+  likes: [],
   reposts: [],
-  bookmarks: [
-    { user_id: 'usr_dreftian', post_id: 'post_1', created_at: new Date().toISOString() },
-  ],
-  follows: [
-    { follower_id: 'usr_dreftian', following_id: 'usr_talma', created_at: new Date().toISOString() },
-    { follower_id: 'usr_dreftian', following_id: 'usr_supabase', created_at: new Date().toISOString() },
-  ],
-  messages: [
-    {
-      id: 'msg_1',
-      sender_id: 'usr_talma',
-      receiver_id: 'usr_dreftian',
-      content: '¡Hola Dreftian! Bienvenido a Talma. Tu espacio está listo y conectado con Supabase.',
-      created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    },
-    {
-      id: 'msg_2',
-      sender_id: 'usr_dreftian',
-      receiver_id: 'usr_talma',
-      content: '¡Gracias! El bucket de almacenamiento y los posts están funcionando perfecto.',
-      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    },
-  ],
+  bookmarks: [],
+  follows: [],
+  messages: [],
 };
 
 let memoryDb: DatabaseSchema | null = null;
 
 function readDb(): DatabaseSchema {
-  if (memoryDb) return memoryDb;
+  if (memoryDb && memoryDb.profiles && memoryDb.profiles.some((p) => p.id === 'admin') && memoryDb.profiles.length === 1) {
+    return memoryDb;
+  }
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
-      memoryDb = JSON.parse(data);
-      return memoryDb!;
+      const parsed = JSON.parse(data);
+      if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin') && parsed.profiles.length === 1) {
+        memoryDb = parsed;
+        return memoryDb!;
+      }
     }
   } catch (err) {
     console.error('Error reading DB file, using fallback:', err);

@@ -82,7 +82,7 @@ api.post('/upload', async (c) => {
 
 // POSTS ROUTES
 api.get('/posts', async (c) => {
-  const currentUserId = c.req.query('userId') || 'usr_dreftian';
+  const currentUserId = c.req.query('userId') || 'admin';
   const username = c.req.query('username');
   const tab = c.req.query('tab') || 'for_you';
 
@@ -100,7 +100,7 @@ api.get('/posts', async (c) => {
 
 api.get('/posts/:id', async (c) => {
   const id = c.req.param('id');
-  const currentUserId = c.req.query('userId') || 'usr_dreftian';
+  const currentUserId = c.req.query('userId') || 'admin';
   const post = await db.getPostById(id, currentUserId);
   if (!post) {
     return c.json({ error: 'Post no encontrado' }, 404);
@@ -110,7 +110,7 @@ api.get('/posts/:id', async (c) => {
 
 api.post('/posts', async (c) => {
   const body = await c.req.json();
-  const userId = body.user_id || 'usr_dreftian';
+  const userId = body.user_id || 'admin';
   const content = body.content || '';
   const media = body.media || [];
   const poll = body.poll || null;
@@ -133,7 +133,7 @@ api.post('/posts', async (c) => {
 
 api.delete('/posts/:id', async (c) => {
   const id = c.req.param('id');
-  const userId = c.req.query('userId') || 'usr_dreftian';
+  const userId = c.req.query('userId') || 'admin';
   const success = await db.deletePost(id, userId);
   if (!success) {
     return c.json({ error: 'No se pudo eliminar el post o no tienes permiso' }, 403);
@@ -144,7 +144,7 @@ api.delete('/posts/:id', async (c) => {
 api.post('/posts/:id/like', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const userId = body.userId || c.req.query('userId') || 'usr_dreftian';
+  const userId = body.userId || c.req.query('userId') || 'admin';
   try {
     const result = await db.toggleLike(id, userId);
     return c.json(result);
@@ -156,7 +156,7 @@ api.post('/posts/:id/like', async (c) => {
 api.post('/posts/:id/repost', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const userId = body.userId || c.req.query('userId') || 'usr_dreftian';
+  const userId = body.userId || c.req.query('userId') || 'admin';
   try {
     const result = await db.toggleRepost(id, userId);
     return c.json(result);
@@ -168,7 +168,7 @@ api.post('/posts/:id/repost', async (c) => {
 api.post('/posts/:id/bookmark', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const userId = body.userId || c.req.query('userId') || 'usr_dreftian';
+  const userId = body.userId || c.req.query('userId') || 'admin';
   try {
     const result = await db.toggleBookmark(id, userId);
     return c.json(result);
@@ -180,7 +180,7 @@ api.post('/posts/:id/bookmark', async (c) => {
 api.post('/posts/:id/poll', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
-  const userId = body.userId || 'usr_dreftian';
+  const userId = body.userId || 'admin';
   const optionId = body.optionId;
   try {
     const result = await db.votePoll(id, optionId, userId);
@@ -192,8 +192,11 @@ api.post('/posts/:id/poll', async (c) => {
 
 // USERS & PROFILES
 api.get('/users/me', async (c) => {
-  const userId = c.req.query('userId') || 'usr_dreftian';
-  const profile = await db.getProfileById(userId);
+  const userId = c.req.query('userId') || 'admin';
+  let profile = await db.getProfileById(userId);
+  if (!profile) {
+    profile = await db.getProfileById('admin');
+  }
   if (!profile) {
     return c.json({ error: 'Perfil no encontrado' }, 404);
   }
@@ -201,7 +204,7 @@ api.get('/users/me', async (c) => {
 });
 
 api.get('/users/recommendations', async (c) => {
-  const currentUserId = c.req.query('userId') || 'usr_dreftian';
+  const currentUserId = c.req.query('userId') || 'admin';
   const allProfiles = await db.getProfiles();
   const recommendations = allProfiles
     .filter((p) => p.id !== currentUserId)
@@ -228,20 +231,20 @@ api.put('/users/:id', async (c) => {
 api.post('/users/:id/follow', async (c) => {
   const followingId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const followerId = body.followerId || 'usr_dreftian';
+  const followerId = body.followerId || 'admin';
   const result = await db.toggleFollow(followerId, followingId);
   return c.json(result);
 });
 
 // DIRECT MESSAGES (CHAT)
 api.get('/messages/conversations', async (c) => {
-  const userId = c.req.query('userId') || 'usr_dreftian';
+  const userId = c.req.query('userId') || 'admin';
   const conversations = await db.getConversations(userId);
   return c.json(conversations);
 });
 
 api.get('/messages/:otherUserId', async (c) => {
-  const userId = c.req.query('userId') || 'usr_dreftian';
+  const userId = c.req.query('userId') || 'admin';
   const otherUserId = c.req.param('otherUserId');
   const messages = await db.getMessagesBetween(userId, otherUserId);
   return c.json(messages);
@@ -249,7 +252,7 @@ api.get('/messages/:otherUserId', async (c) => {
 
 api.post('/messages', async (c) => {
   const body = await c.req.json();
-  const senderId = body.sender_id || 'usr_dreftian';
+  const senderId = body.sender_id || 'admin';
   const receiverId = body.receiver_id;
   const content = body.content || '';
   const mediaUrl = body.media_url;
@@ -272,37 +275,57 @@ api.post('/messages', async (c) => {
 
 // AUTH
 api.post('/auth/signin', async (c) => {
-  const { email, password } = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
+  const identifier = (body.email || body.id || body.username || '').trim().toLowerCase();
+  const password = (body.password || '').trim();
+
+  // Admin login check: id: admin, password: admin
+  if ((identifier === 'admin' || identifier === 'admin@talma.app') && password === 'admin') {
+    let adminProfile = await db.getProfileById('admin');
+    if (!adminProfile) {
+      adminProfile = await db.updateProfile('admin', {
+        username: 'admin',
+        display_name: 'Admin',
+        avatar_url: `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/logo-talma.png`,
+        banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Cuenta Oficial de Administración de Talma 🚀 Plataforma social en tiempo real sobre Supabase. 100% gratuita y sin suscripciones VIP.',
+        location: 'Global',
+        website: 'https://talma.app',
+        is_verified: true,
+      });
+    }
+    return c.json({
+      user: adminProfile,
+      token: 'admin_token_' + Date.now(),
+    });
+  }
+
+  // If wrong password for admin
+  if (identifier === 'admin' || identifier === 'admin@talma.app') {
+    return c.json({ error: 'Contraseña incorrecta para la cuenta admin' }, 401);
+  }
+
+  // Attempt Supabase auth
   try {
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
+      email: body.email,
+      password: body.password,
     });
     if (!error && data.user) {
       let profile = await db.getProfileById(data.user.id);
       if (!profile) {
         profile = await db.updateProfile(data.user.id, {
-          username: email.split('@')[0],
-          display_name: email.split('@')[0],
+          username: (body.email || 'user').split('@')[0],
+          display_name: (body.email || 'Usuario').split('@')[0],
         });
       }
       return c.json({ user: profile, session: data.session });
     }
   } catch (err) {
-    console.error('Supabase auth signin error, checking local profiles:', err);
+    console.error('Supabase auth signin error:', err);
   }
 
-  // Fallback demo account login
-  const username = email.split('@')[0].toLowerCase();
-  const profiles = await db.getProfiles();
-  const match = profiles.find(
-    (p) => p.username.toLowerCase() === username || p.id === 'usr_dreftian'
-  );
-
-  return c.json({
-    user: match || profiles[0],
-    token: 'talma_token_' + Date.now(),
-  });
+  return c.json({ error: 'Credenciales inválidas. Usa id: admin y contraseña: admin' }, 401);
 });
 
 api.post('/auth/signup', async (c) => {
@@ -329,7 +352,6 @@ api.post('/auth/signup', async (c) => {
     console.error('Supabase auth signup error, creating profile locally:', err);
   }
 
-  // Fallback profile creation
   const id = 'usr_' + Date.now().toString(36);
   const newProfile = await db.updateProfile(id, {
     username: username || email.split('@')[0],

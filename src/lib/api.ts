@@ -108,7 +108,7 @@ export async function uploadMedia(file: File): Promise<MediaAttachment> {
   return res.json();
 }
 
-export async function fetchMe(userId: string = 'usr_dreftian'): Promise<UserProfile> {
+export async function fetchMe(userId: string = 'admin'): Promise<UserProfile> {
   const res = await fetch(`${API_BASE}/api/users/me?userId=${encodeURIComponent(userId)}`);
   if (!res.ok) throw new Error('Error al cargar perfil');
   return res.json();

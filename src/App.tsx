@@ -10,34 +10,32 @@ import { MessagesView } from './components/MessagesView';
 import { ExploreView } from './components/ExploreView';
 import { NotificationsView } from './components/NotificationsView';
 import { AuthModal } from './components/AuthModal';
+import { MobileDrawer } from './components/MobileDrawer';
 import { Post, UserProfile } from './types';
 import { fetchPosts, fetchMe, deletePost } from './lib/api';
 import {
   X,
-  Sparkles,
-  AlertCircle,
   Home,
   Search,
   Bell,
   Mail,
-  User,
   Feather,
 } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: 'usr_dreftian',
-    username: 'dreftian',
-    display_name: 'Dreftian',
-    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+    id: 'admin',
+    username: 'admin',
+    display_name: 'Admin',
+    avatar_url: 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png',
     banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-    bio: 'Arquitecto y Desarrollador Full-Stack 🚀 Construyendo Talma sobre Supabase.',
-    location: 'Lima, Perú',
+    bio: 'Cuenta Oficial de Administración de Talma 🚀 Plataforma social en tiempo real sobre Supabase. 100% gratuita y sin suscripciones VIP.',
+    location: 'Global',
     website: 'https://talma.app',
     is_verified: true,
-    followers_count: 1420,
-    following_count: 380,
-    joined_at: '2026-01-15T00:00:00Z',
+    followers_count: 0,
+    following_count: 0,
+    joined_at: '2026-01-01T00:00:00Z',
   });
 
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -49,6 +47,7 @@ export default function App() {
   const [chatWithUser, setChatWithUser] = useState<UserProfile | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showComposerModal, setShowComposerModal] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
 
   // Initial load
@@ -126,7 +125,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black text-[#e7e9ea] flex justify-center">
       <div className="flex w-full max-w-[1280px]">
-        {/* Left Sidebar */}
+        {/* Left Sidebar - Exact X Web Desktop Experience */}
         <Sidebar
           currentTab={currentTab}
           onSelectTab={handleSelectTab}
@@ -182,6 +181,7 @@ export default function App() {
                 onBack={() => handleSelectTab('home')}
                 currentUser={currentUser}
                 onSelectProfile={handleSelectProfile}
+                onOpenDrawer={() => setIsMobileDrawerOpen(true)}
               />
               <div className="flex flex-col">
                 {posts.filter((p) => p.is_bookmarked).length === 0 ? (
@@ -212,6 +212,7 @@ export default function App() {
                 onTabChange={setHomeFeedTab}
                 currentUser={currentUser}
                 onSelectProfile={handleSelectProfile}
+                onOpenDrawer={() => setIsMobileDrawerOpen(true)}
               />
 
               {/* Active Search Filter Banner */}
@@ -265,7 +266,7 @@ export default function App() {
           )}
         </main>
 
-        {/* Right Sidebar (Search, Premium, Trends, Recommendations) */}
+        {/* Right Sidebar (Search, Free Info, Trends, Recommendations) - Desktop only */}
         {currentTab !== 'messages' && (
           <RightSidebar
             currentUserId={currentUser.id}
@@ -278,83 +279,79 @@ export default function App() {
         )}
       </div>
 
-      {/* Mobile Floating Action Button (FAB) for Compose */}
+      {/* Mobile Floating Action Button (FAB) for Compose - Exact X Mobile App Style */}
       {currentTab !== 'messages' && (
         <button
           onClick={() => setShowComposerModal(true)}
-          className="fixed bottom-18 right-4 sm:hidden bg-[#00ba7c] hover:bg-[#00a36d] text-white p-3.5 rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#22c55e]/40"
+          className="fixed bottom-18 right-4 sm:hidden bg-[#22c55e] hover:bg-[#16a34a] text-black p-3.5 rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#22c55e]/50 shadow-green-950/40"
           title="Nuevo post"
         >
-          <Feather className="w-6 h-6 stroke-[2.2]" />
+          <Feather className="w-6 h-6 stroke-[2.4]" />
         </button>
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-[#2f3336] flex sm:hidden justify-around items-center h-14 px-2">
+      {/* Mobile Bottom Navigation Bar - Exact X Mobile App UI */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-[#2f3336] flex sm:hidden justify-around items-center h-[52px] px-2 select-none">
         <button
           onClick={() => handleSelectTab('home')}
-          className={`p-2.5 rounded-full relative transition-colors ${
+          className={`flex-1 flex justify-center py-2 relative transition-colors ${
             currentTab === 'home' ? 'text-white' : 'text-[#71767b]'
           }`}
           title="Inicio"
         >
-          <Home className={`w-6 h-6 ${currentTab === 'home' ? 'stroke-[2.5]' : ''}`} />
+          <Home className={`w-6 h-6 ${currentTab === 'home' ? 'stroke-[2.5] text-white' : ''}`} />
         </button>
 
         <button
           onClick={() => handleSelectTab('explore')}
-          className={`p-2.5 rounded-full transition-colors ${
+          className={`flex-1 flex justify-center py-2 transition-colors ${
             currentTab === 'explore' ? 'text-white' : 'text-[#71767b]'
           }`}
           title="Explorar"
         >
-          <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5]' : ''}`} />
+          <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5] text-white' : ''}`} />
         </button>
 
         <button
           onClick={() => handleSelectTab('notifications')}
-          className={`p-2.5 rounded-full relative transition-colors ${
+          className={`flex-1 flex justify-center py-2 relative transition-colors ${
             currentTab === 'notifications' ? 'text-white' : 'text-[#71767b]'
           }`}
           title="Notificaciones"
         >
-          <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5]' : ''}`} />
-          <span className="absolute top-2 right-2 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-            3
-          </span>
+          <div className="relative">
+            <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5] text-white' : ''}`} />
+            <span className="absolute -top-1 -right-1.5 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+              3
+            </span>
+          </div>
         </button>
 
         <button
           onClick={() => handleSelectTab('messages')}
-          className={`p-2.5 rounded-full relative transition-colors ${
+          className={`flex-1 flex justify-center py-2 relative transition-colors ${
             currentTab === 'messages' ? 'text-white' : 'text-[#71767b]'
           }`}
           title="Mensajes"
         >
-          <Mail className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5]' : ''}`} />
-          <span className="absolute top-2 right-2 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-            1
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleSelectProfile(currentUser.username)}
-          className={`p-2.5 rounded-full transition-colors ${
-            currentTab === 'profile' ? 'text-white' : 'text-[#71767b]'
-          }`}
-          title="Perfil"
-        >
-          <img
-            src={currentUser.avatar_url}
-            alt={currentUser.display_name}
-            className={`w-6 h-6 rounded-full object-cover border ${
-              currentTab === 'profile'
-                ? 'border-[#22c55e] ring-1 ring-[#22c55e]'
-                : 'border-[#2f3336]'
-            }`}
-          />
+          <div className="relative">
+            <Mail className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5] text-white' : ''}`} />
+            <span className="absolute -top-1 -right-1.5 bg-[#22c55e] text-black text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+              1
+            </span>
+          </div>
         </button>
       </nav>
+
+      {/* Mobile Slide-Out Drawer Navigation (Triggered by mobile header avatar) */}
+      <MobileDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        currentUser={currentUser}
+        onSelectTab={handleSelectTab}
+        onSelectProfile={handleSelectProfile}
+        onOpenAuth={() => setShowAuthModal(true)}
+      />
 
       {/* Floating Composer Modal (Triggered by Sidebar "Postear" button or Mobile FAB) */}
       {showComposerModal && (

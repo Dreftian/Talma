@@ -10,6 +10,7 @@ interface HeaderProps {
   onBack?: () => void;
   currentUser?: UserProfile;
   onSelectProfile?: (username: string) => void;
+  onOpenDrawer?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,40 +20,62 @@ export const Header: React.FC<HeaderProps> = ({
   onBack,
   currentUser,
   onSelectProfile,
+  onOpenDrawer,
 }) => {
   if (title) {
     return (
-      <div className="sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336] flex items-center px-4 h-[53px]">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 mr-4 rounded-full hover:bg-[#181818] transition-colors"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="w-5 h-5 fill-current text-[#e7e9ea]"
+      <div className="sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
+        <div className="flex items-center">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 mr-4 rounded-full hover:bg-[#181818] transition-colors"
             >
-              <g>
-                <path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z" />
-              </g>
-            </svg>
-          </button>
-        )}
-        <h1 className="font-bold text-xl text-[#e7e9ea] truncate">{title}</h1>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="w-5 h-5 fill-current text-[#e7e9ea]"
+              >
+                <g>
+                  <path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z" />
+                </g>
+              </svg>
+            </button>
+          ) : (
+            currentUser && onOpenDrawer && (
+              <button
+                onClick={onOpenDrawer}
+                className="sm:hidden p-1 mr-3 rounded-full hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                  alt={currentUser.display_name}
+                  className="w-8 h-8 rounded-full object-cover border border-[#2f3336]"
+                />
+              </button>
+            )
+          )}
+          <h1 className="font-bold text-xl text-[#e7e9ea] truncate">{title}</h1>
+        </div>
+        <div className="sm:hidden">
+          <TalmaLogo size="sm" variant="icon" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336]">
-      {/* Mobile-only header (top bar on small screens) */}
-      <div className="flex sm:hidden items-center justify-between px-4 pt-3 pb-2 border-b border-[#2f3336]/50">
-        {currentUser && onSelectProfile ? (
+      {/* Mobile-only header (top bar on small screens - Exact X App UI) */}
+      <div className="flex sm:hidden items-center justify-between px-4 pt-3 pb-2 border-b border-[#2f3336]/40">
+        {currentUser ? (
           <button
-            onClick={() => onSelectProfile(currentUser.username)}
-            className="shrink-0 rounded-full hover:opacity-80 transition-opacity"
-            title="Mi perfil"
+            onClick={() => {
+              if (onOpenDrawer) onOpenDrawer();
+              else if (onSelectProfile) onSelectProfile(currentUser.username);
+            }}
+            className="shrink-0 rounded-full hover:opacity-80 transition-opacity active:scale-95"
+            title="Abrir menú"
           >
             <img
               src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
@@ -64,14 +87,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="w-8 h-8" />
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <TalmaLogo size="sm" variant="icon" />
           <span className="font-black text-xl italic text-white tracking-tighter">
             Talma
           </span>
         </div>
 
-        <button className="text-[#71767b] hover:text-white p-1">
+        <button className="text-[#71767b] hover:text-[#22c55e] p-1 transition-colors">
           <Sparkles className="w-5 h-5" />
         </button>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { Search, X, MoreHorizontal, CheckCircle2, Sparkles, Database } from 'lucide-react';
 import { UserProfile, TrendItem } from '../types';
 import { fetchRecommendations, toggleFollow } from '../lib/api';
 
@@ -88,22 +88,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         </form>
       </div>
 
-      {/* Premium Subscription Card */}
-      <div className="bg-[#16181c] rounded-2xl p-4 border border-[#2f3336]/60 flex flex-col gap-2.5">
-        <h2 className="font-extrabold text-xl text-[#e7e9ea] leading-snug">
-          Suscríbete a Talma Premium
-        </h2>
-        <p className="text-sm text-[#71767b] leading-relaxed">
-          Sube videos en alta definición a Supabase Storage, obtén la marca de verificación y disfruta de una experiencia sin límites.
-        </p>
-        <div>
-          <button className="bg-[#22c55e] hover:bg-[#16a34a] text-black font-extrabold px-5 py-2 rounded-full text-sm transition-all duration-200 active:scale-95 shadow-sm">
-            Suscribirse
-          </button>
-        </div>
-      </div>
-
-      {/* Trending Topics (Qué está pasando) */}
+      {/* Trending Topics (Qué está pasando) - Exact X desktop style */}
       <div className="bg-[#16181c] rounded-2xl border border-[#2f3336]/60 overflow-hidden">
         <h2 className="font-extrabold text-xl text-[#e7e9ea] px-4 pt-3 pb-2">
           Qué está pasando
@@ -138,64 +123,77 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         </div>
       </div>
 
-      {/* Who to follow (A quién seguir) */}
-      <div className="bg-[#16181c] rounded-2xl border border-[#2f3336]/60 overflow-hidden">
-        <h2 className="font-extrabold text-xl text-[#e7e9ea] px-4 pt-3 pb-2">
-          A quién seguir
-        </h2>
-        <div className="flex flex-col">
-          {recommendations.map((user) => {
-            const isFollowing = followingMap[user.id] ?? false;
-            return (
-              <div
-                key={user.id}
-                onClick={() => onSelectProfile(user.username)}
-                className="px-4 py-3 hover:bg-[#1d1f23] cursor-pointer transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <img
-                    src={user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
-                    alt={user.display_name}
-                    className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
-                  />
-                  <div className="flex flex-col leading-tight overflow-hidden">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-[15px] text-white truncate hover:underline">
-                        {user.display_name}
-                      </span>
-                      {user.is_verified && (
-                        <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
-                      )}
-                    </div>
-                    <span className="text-sm text-[#71767b] truncate">
-                      @{user.username}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFollow(user.id);
-                  }}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all duration-200 shrink-0 ${
-                    isFollowing
-                      ? 'border border-[#71767b] text-white hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
-                      : 'bg-white text-black hover:bg-white/90 active:scale-95'
-                  }`}
-                >
-                  {isFollowing ? 'Siguiendo' : 'Seguir'}
-                </button>
-              </div>
-            );
-          })}
+      {/* Free & Open Info Card (No VIP subscriptions) */}
+      <div className="bg-[#16181c] rounded-2xl p-4 border border-[#2f3336]/60 flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-[#22c55e]">
+          <Database className="w-5 h-5" />
+          <h3 className="font-bold text-[15px] text-[#e7e9ea]">100% Gratuito y Libre</h3>
         </div>
-        <div className="px-4 py-3.5 hover:bg-[#1d1f23] cursor-pointer transition-colors border-t border-[#2f3336]/40">
-          <span className="text-[14px] text-[#22c55e] font-medium hover:underline">
-            Mostrar más
-          </span>
-        </div>
+        <p className="text-xs text-[#71767b] leading-relaxed">
+          Talma no tiene suscripciones de pago ni muros VIP. Sube fotos, videos, audios y GIFs ilimitados directamente a Supabase Storage con total libertad.
+        </p>
       </div>
+
+      {/* Who to follow (A quién seguir) */}
+      {recommendations.length > 0 && (
+        <div className="bg-[#16181c] rounded-2xl border border-[#2f3336]/60 overflow-hidden">
+          <h2 className="font-extrabold text-xl text-[#e7e9ea] px-4 pt-3 pb-2">
+            A quién seguir
+          </h2>
+          <div className="flex flex-col">
+            {recommendations.map((user) => {
+              const isFollowing = followingMap[user.id] ?? false;
+              return (
+                <div
+                  key={user.id}
+                  onClick={() => onSelectProfile(user.username)}
+                  className="px-4 py-3 hover:bg-[#1d1f23] cursor-pointer transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <img
+                      src={user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                      alt={user.display_name}
+                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
+                    />
+                    <div className="flex flex-col leading-tight overflow-hidden">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-[15px] text-white truncate hover:underline">
+                          {user.display_name}
+                        </span>
+                        {user.is_verified && (
+                          <CheckCircle2 className="w-4 h-4 text-[#22c55e] fill-[#22c55e] stroke-black shrink-0" />
+                        )}
+                      </div>
+                      <span className="text-sm text-[#71767b] truncate">
+                        @{user.username}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFollow(user.id);
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all duration-200 shrink-0 ${
+                      isFollowing
+                        ? 'border border-[#71767b] text-white hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
+                        : 'bg-white text-black hover:bg-white/90 active:scale-95'
+                    }`}
+                  >
+                    {isFollowing ? 'Siguiendo' : 'Seguir'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="px-4 py-3.5 hover:bg-[#1d1f23] cursor-pointer transition-colors border-t border-[#2f3336]/40">
+            <span className="text-[14px] text-[#22c55e] font-medium hover:underline">
+              Mostrar más
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Footer legal links */}
       <footer className="px-4 py-2 text-[13px] text-[#71767b] leading-normal flex flex-wrap gap-x-2 gap-y-1">
@@ -203,8 +201,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         <a href="#" className="hover:underline">Privacidad</a>
         <a href="#" className="hover:underline">Cookies</a>
         <a href="#" className="hover:underline">Accesibilidad</a>
-        <a href="#" className="hover:underline">Información de anuncios</a>
-        <span>© 2026 Talma, Inc. con Supabase</span>
+        <a href="#" className="hover:underline">Información</a>
+        <span>© 2026 Talma · Conectado a Supabase</span>
       </footer>
     </aside>
   );

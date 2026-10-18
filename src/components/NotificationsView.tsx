@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Repeat2, UserPlus, MessageSquare, Sparkles } from 'lucide-react';
+import { Heart, Repeat2, ShieldCheck, Database, Sparkles } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface NotificationsViewProps {
@@ -8,41 +8,35 @@ interface NotificationsViewProps {
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
-  onSelectProfile,
+  currentUser,
 }) => {
   const notifications = [
     {
       id: 'notif_1',
-      type: 'like',
-      actor: {
-        username: 'talma_oficial',
-        display_name: 'Talma Oficial',
-        avatar_url: '/logo-talma.png',
-      },
-      text: 'le gustó tu publicación sobre la integración de Supabase Storage',
-      time: '15m',
+      type: 'system',
+      title: 'Sistema Talma',
+      text: '¡Bienvenido Administrador! Tu cuenta está activa con acceso completo a Supabase Storage y Base de Datos.',
+      time: '1m',
+      icon: ShieldCheck,
+      iconColor: 'text-[#22c55e]',
     },
     {
       id: 'notif_2',
-      type: 'repost',
-      actor: {
-        username: 'supabase',
-        display_name: 'Supabase',
-        avatar_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      },
-      text: 'reposteó tu publicación',
-      time: '1h',
+      type: 'storage',
+      title: 'Supabase Storage',
+      text: 'El bucket "talma-media" está listo para subir fotos, videos de alta definición, audios y GIFs sin límites.',
+      time: '15m',
+      icon: Database,
+      iconColor: 'text-[#22c55e]',
     },
     {
       id: 'notif_3',
-      type: 'follow',
-      actor: {
-        username: 'elonmusk',
-        display_name: 'Elon Musk',
-        avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80',
-      },
-      text: 'comenzó a seguirte en Talma',
-      time: '3h',
+      type: 'welcome',
+      title: 'Talma Social',
+      text: 'Talma es 100% gratuita y abierta. Sin muros de pago ni suscripciones VIP.',
+      time: '1h',
+      icon: Sparkles,
+      iconColor: 'text-[#22c55e]',
     },
   ];
 
@@ -64,37 +58,27 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </button>
       </div>
 
-      {/* Notifications list */}
       <div className="flex flex-col">
-        {notifications.map((notif) => (
-          <div
-            key={notif.id}
-            onClick={() => onSelectProfile(notif.actor.username)}
-            className="flex gap-4 px-6 py-4 border-b border-[#2f3336] hover:bg-[#080808] transition-colors cursor-pointer"
-          >
-            <div className="shrink-0 pt-0.5">
-              {notif.type === 'like' && <Heart className="w-6 h-6 text-[#f91880] fill-[#f91880]" />}
-              {notif.type === 'repost' && <Repeat2 className="w-6 h-6 text-[#00ba7c]" />}
-              {notif.type === 'follow' && <UserPlus className="w-6 h-6 text-[#22c55e]" />}
-              {notif.type === 'reply' && <MessageSquare className="w-6 h-6 text-[#1d9bf0]" />}
+        {notifications.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.id}
+              className="p-4 border-b border-[#2f3336] hover:bg-[#16181c] transition-colors flex gap-4 items-start"
+            >
+              <div className="p-2 rounded-full bg-[#181818] border border-[#2f3336] shrink-0 mt-0.5">
+                <Icon className={`w-5 h-5 ${item.iconColor}`} />
+              </div>
+              <div className="flex-1 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[15px] text-white">{item.title}</span>
+                  <span className="text-xs text-[#71767b]">{item.time}</span>
+                </div>
+                <p className="text-sm text-[#e7e9ea] leading-relaxed">{item.text}</p>
+              </div>
             </div>
-
-            <div className="flex flex-col gap-1.5 flex-1">
-              <img
-                src={notif.actor.avatar_url}
-                alt=""
-                className="w-8 h-8 rounded-full object-cover border border-[#2f3336]"
-              />
-              <p className="text-[15px] text-[#e7e9ea] leading-normal">
-                <span className="font-bold text-white hover:underline">
-                  {notif.actor.display_name}
-                </span>{' '}
-                {notif.text}
-              </p>
-            </div>
-            <span className="text-xs text-[#71767b]">{notif.time}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
