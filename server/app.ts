@@ -24,6 +24,7 @@ api.get('/health', (c) => {
     storageBucket: STORAGE_BUCKET,
     isSupabaseDbAvailable: db.isSupabaseAvailable(),
     secretKeyPrefix: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.slice(0, 10) : 'none',
+    secretKeySuffix: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.slice(-6) : 'none',
     secretKeyLength: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.length : 0,
     time: new Date().toISOString(),
   });
