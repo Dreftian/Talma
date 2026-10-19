@@ -418,4 +418,38 @@ case 'highlights':
 - **Notificaciones**: la API no expone endpoint de notificaciones, así que `NotificationsView` usa datos sembrados (`SEEDED_NOTIFICATIONS`).
 - **Badge de notificaciones**: sin contador en la API, solo aparece si hay valor > 0.
 - **"A quién seguir"**: el carrusel existe pero solo se pinta si `fetchRecommendations` devuelve usuarios; la BD de desarrollo solo tiene `admin`.
-- **Interacciones nuevas** (píldora Premium, Espacios, claves de acceso, delegación): son de maqueta, sin backend.
+- **Interacciones nuevas** (claves de acceso, delegación, toggles de seguridad): son de maqueta, sin backend.
+
+## Ajuste posterior: se quitaron las funciones premium de X
+
+Por petición del usuario, no se replica nada que en X sea de pago o exclusivo de su app. Se eliminaron de la implementación:
+
+- **Premium** y su píldora "50% de descuento" (drawer).
+- **Espacios** (drawer).
+- **Estudio para creadores** (drawer).
+- **Grok / Talma AI**: el icono central del bottom nav, su bottom sheet de sugerencias y los botones "Preguntar a Talma AI" de `TweetCard` / `TweetDetailModal`.
+- **CTA "Actualizar a nivel…"** (header de inicio).
+- **"Obtener verificación"** (perfil) y el botón **"Suscríbete a Premium"** del estado vacío de Artículos.
+
+El bottom nav móvil vuelve a **4 accesos** (Inicio, Explorar, Notificaciones, Mensajes), tal como describe el README ("100% Gratuito y Libre: Sin suscripciones VIP ni muros de pago").
+
+## Persistencia del borrado de posts (bug corregido)
+
+Síntoma: al eliminar un post y recargar, el post reaparecía.
+
+Causas y arreglos:
+
+1. `server/supabase.ts` tenía la secret key hardcodeada con **un carácter incorrecto**, así que todos los `pushToCloud()` fallaban con `403 Invalid Compact JWS` y el snapshot remoto nunca se actualizaba. Corregida y ahora prioriza `process.env.SUPABASE_SECRET_KEY`.
+2. `data/talma_db.json` estaba **versionado en git**, así que viajaba en cada deployment de Vercel: cada instancia fría arrancaba con un snapshot viejo y resucitaba los posts. Se quitó del índice y `data/` pasó a `.gitignore`.
+3. `syncFromCloud()` fusionaba el snapshot remoto contra un `memoryDb` nulo y descartaba los borrados locales. Ahora `hydrateFromDisk()` carga el disco primero.
+4. Se añadieron **tombstones** (`deleted_posts`) y `mergeRemoteSnapshot()`: ningún snapshot obsoleto puede resucitar un post borrado.
+5. `pushToCloud()` **encola** las escrituras (antes descartaba las concurrentes) y envía `apikey` + `Authorization: Bearer`.
+6. `deletePost()` borra también las respuestas anidadas y ajusta `replies_count`.
+7. La UI solo quita el post del feed si el backend confirma; si falla, muestra un aviso (`role="alert"`).
+8. El feed se pide con `cache: 'no-store'`.
+
+Verificado con pruebas E2E (crear → borrar → recargar → simular cold start): el post no vuelve.
+
+## Seguridad
+
+- `/api/health` ya no expone fragmentos de la secret key (antes publicaba `secretKeyPrefix`, `secretKeySuffix` y la longitud en un repo público).
