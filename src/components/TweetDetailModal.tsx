@@ -551,8 +551,11 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
               {/* Barra de acciones (ref "WhatsApp 21122026-10-18 at 5.58.29 PM.jpeg": icono + contador) */}
               <div className="py-1 border-b border-[#2f3336] flex items-center justify-around text-[#71767b] text-[13px]">
                 <button
+                  type="button"
                   onClick={openReplyMode}
                   className="group flex items-center gap-1 hover:text-[#1d9bf0] transition-colors cursor-pointer"
+                  title="Responder"
+                  aria-label="Responder"
                 >
                   <span className="p-2 rounded-full group-hover:bg-[#1d9bf0]/10 transition-colors">
                     <MessageSquare className="w-5 h-5" />
@@ -560,10 +563,13 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                   <span>{formatNumber(post.replies_count)}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleRepost}
                   className={`group flex items-center gap-1 hover:text-[#00ba7c] transition-colors cursor-pointer ${
                     isReposted ? 'text-[#00ba7c]' : ''
                   }`}
+                  title="Repostear"
+                  aria-label="Repostear"
                 >
                   <span className="p-2 rounded-full group-hover:bg-[#00ba7c]/10 transition-colors">
                     <Repeat2 className="w-5 h-5" />
@@ -571,10 +577,13 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                   <span>{formatNumber(repostsCount)}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleLike}
                   className={`group flex items-center gap-1 hover:text-[#f91880] transition-colors cursor-pointer ${
                     isLiked ? 'text-[#f91880]' : ''
                   }`}
+                  title="Me gusta"
+                  aria-label="Me gusta"
                 >
                   <span className="p-2 rounded-full group-hover:bg-[#f91880]/10 transition-colors">
                     <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
@@ -582,10 +591,13 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                   <span>{formatNumber(likesCount)}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleBookmark}
                   className={`group flex items-center gap-1 hover:text-[#1d9bf0] transition-colors cursor-pointer ${
                     isBookmarked ? 'text-[#1d9bf0]' : ''
                   }`}
+                  title="Guardar"
+                  aria-label="Guardar"
                 >
                   <span className="p-2 rounded-full group-hover:bg-[#1d9bf0]/10 transition-colors">
                     <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -593,10 +605,13 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
                   <span>{formatNumber(post.bookmarks_count)}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                   }}
                   className="p-2 rounded-full hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0] transition-colors cursor-pointer"
+                  title="Compartir"
+                  aria-label="Compartir"
                 >
                   <Share className="w-5 h-5" />
                 </button>

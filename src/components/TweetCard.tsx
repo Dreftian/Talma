@@ -318,11 +318,14 @@ export const TweetCard: React.FC<TweetCardProps> = ({
         <div className="flex items-center justify-between text-[#71767b] mt-3 max-w-[440px]">
           {/* Reply */}
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onReply?.(post);
             }}
-            className="flex items-center gap-1.5 group transition-colors"
+            className="flex items-center gap-1.5 group transition-colors cursor-pointer"
+            title="Responder"
+            aria-label="Responder"
           >
             <div className="p-2 rounded-full group-hover:bg-[#1d9bf0]/10 group-hover:text-[#1d9bf0] transition-colors">
               <MessageSquare className="w-4 h-4" />
@@ -334,10 +337,13 @@ export const TweetCard: React.FC<TweetCardProps> = ({
 
           {/* Repost */}
           <button
+            type="button"
             onClick={handleRepost}
-            className={`flex items-center gap-1.5 group transition-colors ${
+            className={`flex items-center gap-1.5 group transition-colors cursor-pointer ${
               isReposted ? 'text-[#00ba7c]' : ''
             }`}
+            title="Repostear"
+            aria-label="Repostear"
           >
             <div className="p-2 rounded-full group-hover:bg-[#00ba7c]/10 group-hover:text-[#00ba7c] transition-colors">
               <Repeat2 className="w-4 h-4" />
@@ -349,10 +355,13 @@ export const TweetCard: React.FC<TweetCardProps> = ({
 
           {/* Like */}
           <button
+            type="button"
             onClick={handleLike}
-            className={`flex items-center gap-1.5 group transition-colors ${
+            className={`flex items-center gap-1.5 group transition-colors cursor-pointer ${
               isLiked ? 'text-[#f91880]' : ''
             }`}
+            title="Me gusta"
+            aria-label="Me gusta"
           >
             <div className="p-2 rounded-full group-hover:bg-[#f91880]/10 group-hover:text-[#f91880] transition-colors">
               <Heart
@@ -367,7 +376,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
           </button>
 
           {/* Views */}
-          <div className="flex items-center gap-1.5 group cursor-default">
+          <div className="flex items-center gap-1.5 group cursor-default" title="Visualizaciones" aria-label="Visualizaciones">
             <div className="p-2 rounded-full group-hover:bg-[#1d9bf0]/10 group-hover:text-[#1d9bf0] transition-colors">
               <BarChart2 className="w-4 h-4" />
             </div>
@@ -379,10 +388,13 @@ export const TweetCard: React.FC<TweetCardProps> = ({
           {/* Bookmark & Share */}
           <div className="flex items-center">
             <button
+              type="button"
               onClick={handleBookmark}
-              className={`p-2 rounded-full hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0] transition-colors ${
+              className={`p-2 rounded-full hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0] transition-colors cursor-pointer ${
                 isBookmarked ? 'text-[#1d9bf0]' : ''
               }`}
+              title="Guardar"
+              aria-label="Guardar"
             >
               <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
             </button>
