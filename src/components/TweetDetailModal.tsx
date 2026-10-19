@@ -46,7 +46,7 @@ const ComposerIconButton: React.FC<{ label: string; children: React.ReactNode }>
     type="button"
     title={label}
     aria-label={label}
-    className="p-2 rounded-full text-[#1d9bf0] hover:bg-[#1d9bf0]/10 transition-colors cursor-pointer shrink-0"
+    className="w-9 h-9 flex items-center justify-center rounded-full text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 active:scale-95 transition-all cursor-pointer shrink-0"
   >
     {children}
   </button>
@@ -652,25 +652,25 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
           >
             Postea tu respuesta
           </button>
-          <div className="flex items-center gap-0.5 text-[#1d9bf0] shrink-0">
+          <div className="flex items-center gap-0.5 text-[#71767b] shrink-0">
             <button
               onClick={openReplyMode}
               title="Añadir imagen"
-              className="p-2 rounded-full hover:bg-[#1d9bf0]/10 transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:text-[#e7e9ea] hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
             <button
               onClick={openReplyMode}
               title="Añadir GIF"
-              className="p-2 rounded-full hover:bg-[#1d9bf0]/10 transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:text-[#e7e9ea] hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
             >
               <Film className="w-5 h-5" />
             </button>
             <button
               onClick={openReplyMode}
               title="Ampliar respuesta"
-              className="p-2 rounded-full hover:bg-[#1d9bf0]/10 transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:text-[#e7e9ea] hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
             >
               <Maximize2 className="w-5 h-5" />
             </button>

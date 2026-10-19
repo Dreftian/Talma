@@ -500,13 +500,14 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             className="hidden"
           />
 
-          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
+          <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar shrink min-w-0 pr-1">
             {/* Foto / Imagen */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Foto / Imagen"
+              aria-label="Foto / Imagen"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
@@ -515,8 +516,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setShowGifPicker(!showGifPicker)}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer flex items-center justify-center"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Añadir GIF"
+              aria-label="Añadir GIF"
             >
               <span className="text-[11px] font-black border border-current rounded px-1 py-0.2 leading-none">
                 GIF
@@ -527,8 +529,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Video (MP4, WEBM, MOV)"
+              aria-label="Video"
             >
               <Film className="w-5 h-5" />
             </button>
@@ -537,8 +540,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => audioInputRef.current?.click()}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Subir archivo de audio (MP3, WAV, M4A)"
+              aria-label="Audio"
             >
               <Music className="w-5 h-5" />
             </button>
@@ -547,12 +551,13 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-              className={`p-2 rounded-full transition-colors cursor-pointer ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer shrink-0 ${
                 isRecording
                   ? 'text-red-500 bg-red-500/20'
-                  : 'text-[#1d9bf0] hover:bg-[#1d9bf0]/10'
+                  : 'text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10'
               }`}
               title="Grabar nota de voz con micrófono"
+              aria-label="Grabar nota de voz"
             >
               <Mic className="w-5 h-5" />
             </button>
@@ -561,8 +566,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setShowPoll(!showPoll)}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Crear encuesta"
+              aria-label="Crear encuesta"
             >
               <BarChart2 className="w-5 h-5" />
             </button>
@@ -571,8 +577,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             <button
               type="button"
               onClick={() => setContent((prev) => prev + ' 🚀')}
-              className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10 rounded-full active:scale-95 transition-all cursor-pointer shrink-0"
               title="Añadir emoji"
+              aria-label="Añadir emoji"
             >
               <Smile className="w-5 h-5" />
             </button>
@@ -587,30 +594,30 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                   setShowAnonymousNameInput(true);
                 }
               }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ml-1 ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer shrink-0 ${
                 isAnonymous
-                  ? 'bg-[#1d9bf0] text-white border-[#1d9bf0] shadow-sm'
-                  : 'text-[#71767b] border-[#2f3336] hover:text-[#1d9bf0] hover:border-[#1d9bf0]/40'
+                  ? 'bg-[#1d9bf0]/20 text-[#1d9bf0] ring-1 ring-[#1d9bf0]'
+                  : 'text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10'
               }`}
-              title="Publicar en Modo Anónimo y modificar nombre"
+              title={isAnonymous ? 'Modo Anónimo Activado (clic para desactivar)' : 'Activar Modo Anónimo 🎭'}
+              aria-label="Modo Anónimo"
             >
-              <span className="text-xs">🎭</span>
-              <span className="hidden sm:inline">{isAnonymous ? 'Anónimo Activo' : 'Anónimo'}</span>
+              <span className="text-base select-none leading-none">🎭</span>
             </button>
 
             {/* Extalmita Muro Público Toggle */}
             <button
               type="button"
               onClick={() => setPostToExtalmita(!postToExtalmita)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ml-1 ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer shrink-0 ${
                 postToExtalmita
-                  ? 'bg-[#1d9bf0] text-white border-[#1d9bf0] shadow-sm'
-                  : 'text-[#71767b] border-[#2f3336] hover:text-[#1d9bf0] hover:border-[#1d9bf0]/40'
+                  ? 'bg-[#1d9bf0]/20 text-[#1d9bf0] ring-1 ring-[#1d9bf0]'
+                  : 'text-[#71767b] hover:text-[#e7e9ea] hover:bg-white/10'
               }`}
-              title="Publicar en el muro público oficial Extalmita"
+              title={postToExtalmita ? 'Publicando en Extalmita (clic para desactivar)' : 'Publicar en Extalmita 🌐'}
+              aria-label="Extalmita"
             >
-              <span className="text-xs">🌐</span>
-              <span className="hidden sm:inline">Extalmita</span>
+              <span className="text-base select-none leading-none">🌐</span>
             </button>
           </div>
 

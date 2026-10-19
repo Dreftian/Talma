@@ -1,9 +1,24 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { db } from './db.ts';
+import { db, sanitizeProfile } from './db.ts';
 import { supabaseAdmin, STORAGE_BUCKET, SUPABASE_URL, SUPABASE_SECRET_KEY } from './supabase.ts';
 
 const app = new Hono();
+
+// Blindaje de cabeceras HTTP de seguridad para proteger contra ataques y fuga de información
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('X-Content-Type-Options', 'nosniff');
+  c.res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  c.res.headers.set('X-XSS-Protection', '1; mode=block');
+  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
+  c.res.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' https: data:; connect-src 'self' https: wss:;"
+  );
+  c.res.headers.delete('X-Powered-By');
+});
 
 // Enable CORS for frontend requests
 app.use('*', cors({
@@ -14,6 +29,23 @@ app.use('*', cors({
 
 // Sub-router containing all Talma API logic
 const api = new Hono();
+
+// Rate limiter en memoria contra ataques de fuerza bruta y saturación
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+api.use('/auth/*', async (c, next) => {
+  const ip = c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const now = Date.now();
+  let record = rateLimitMap.get(ip);
+  if (!record || now > record.resetAt) {
+    record = { count: 0, resetAt: now + 60000 };
+    rateLimitMap.set(ip, record);
+  }
+  record.count++;
+  if (record.count > 30) {
+    return c.json({ error: 'Demasiadas solicitudes. Por favor espera un momento.' }, 429);
+  }
+  await next();
+});
 
 // Antes de atender cualquier petición, espera a que el estado se haya cargado desde
 // la nube. Sin esto, una instancia serverless en frío arrancaría con el snapshot
@@ -341,9 +373,9 @@ api.post('/posts/:id/poll', async (c) => {
 // USERS & PROFILES
 api.get('/users/me', async (c) => {
   const userId = c.req.query('userId') || 'admin';
-  let profile = await db.getProfileById(userId);
+  let profile = await db.getProfileById(userId, true);
   if (!profile) {
-    profile = await db.getProfileById('admin');
+    profile = await db.getProfileById('admin', true);
   }
   if (!profile) {
     return c.json({ error: 'Perfil no encontrado' }, 404);
@@ -430,7 +462,7 @@ api.post('/auth/signin', async (c) => {
 
   // Admin login check: id: admin, password: admin
   if ((identifier === 'admin' || identifier === 'admin@talma.app') && password === 'admin') {
-    let adminProfile = await db.getProfileById('admin');
+    let adminProfile = await db.getProfileById('admin', true);
     if (!adminProfile) {
       adminProfile = await db.updateProfile('admin', {
         username: 'admin',
@@ -445,7 +477,7 @@ api.post('/auth/signin', async (c) => {
     }
     await db.updateProfile('admin', { last_ip: clientIp });
     return c.json({
-      user: { ...adminProfile, last_ip: clientIp },
+      user: sanitizeProfile(adminProfile, true),
       token: 'admin_token_' + Date.now(),
     });
   }
@@ -455,14 +487,8 @@ api.post('/auth/signin', async (c) => {
     return c.json({ error: 'Contraseña incorrecta para la cuenta admin' }, 401);
   }
 
-  // Check registered users in DB
-  const users = await db.getAllUsers();
-  const matchingUser = users.find(
-    (u) =>
-      u.username.toLowerCase() === identifier ||
-      (u.email && u.email.toLowerCase() === identifier) ||
-      u.id === identifier
-  );
+  // Check registered users in DB safely via internal auth getter
+  const matchingUser = await db.getUserForAuth(identifier);
 
   if (matchingUser) {
     if (matchingUser.password_hash && matchingUser.password_hash !== password) {
@@ -470,7 +496,7 @@ api.post('/auth/signin', async (c) => {
     }
     await db.updateProfile(matchingUser.id, { last_ip: clientIp });
     return c.json({
-      user: { ...matchingUser, last_ip: clientIp },
+      user: sanitizeProfile(matchingUser, true),
       token: 'talma_token_' + Date.now(),
     });
   }

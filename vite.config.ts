@@ -23,4 +23,21 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: false,
+    target: 'es2020',
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+        },
+      },
+    },
+  },
 });

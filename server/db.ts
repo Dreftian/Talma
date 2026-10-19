@@ -77,6 +77,43 @@ export interface MessageItem {
   created_at: string;
 }
 
+/**
+ * Sanitiza perfiles para evitar filtración de información privilegiada:
+ * Elimina password_hash, registration_ip, last_ip y campos internos.
+ */
+export function sanitizeProfile(profile: any, includePrivate = false): any {
+  if (!profile) return profile;
+  const clone = { ...profile };
+  delete clone.password_hash;
+  delete clone.registration_ip;
+  delete clone.last_ip;
+  if (!includePrivate) {
+    delete clone.email;
+    delete clone.posts_history;
+  }
+  return clone;
+}
+
+/**
+ * Sanitiza publicaciones para no exponer IPs de autores ni datos privilegiados:
+ */
+export function sanitizePost(post: any): any {
+  if (!post) return post;
+  const clone = { ...post };
+  delete clone.author_ip;
+  delete clone.client_ip;
+  if (clone.author) {
+    clone.author = sanitizeProfile(clone.author, false);
+  }
+  if (Array.isArray(clone.replies)) {
+    clone.replies = clone.replies.map((r: any) => sanitizePost(r));
+  }
+  if (clone.quoted_post) {
+    clone.quoted_post = sanitizePost(clone.quoted_post);
+  }
+  return clone;
+}
+
 interface DatabaseSchema {
   profiles: UserProfile[];
   posts: PostItem[];
@@ -395,33 +432,45 @@ export const db = {
 
   isSupabaseAvailable: () => supabaseDbAvailable,
 
-  // PROFILES
+  // PROFILES (Sanitizados contra filtración de información privilegiada)
   getProfiles: async (): Promise<UserProfile[]> => {
+    let list: UserProfile[] = [];
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*');
-      if (data && data.length > 0) return data;
+      if (data && data.length > 0) list = data;
     }
-    const state = readDb();
-    return state.profiles;
+    if (list.length === 0) {
+      const state = readDb();
+      list = state.profiles;
+    }
+    return list.map((p) => sanitizeProfile(p, false));
   },
 
-  getProfileById: async (id: string): Promise<UserProfile | null> => {
+  getProfileById: async (id: string, includePrivate = false): Promise<UserProfile | null> => {
+    let profile: UserProfile | null = null;
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', id).single();
-      if (data) return data;
+      if (data) profile = data;
     }
-    const state = readDb();
-    return state.profiles.find((p) => p.id === id) || null;
+    if (!profile) {
+      const state = readDb();
+      profile = state.profiles.find((p) => p.id === id) || null;
+    }
+    return sanitizeProfile(profile, includePrivate);
   },
 
   getProfileByUsername: async (username: string): Promise<UserProfile | null> => {
     const cleanUsername = username.replace('@', '').toLowerCase();
+    let profile: UserProfile | null = null;
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*').ilike('username', cleanUsername).single();
-      if (data) return data;
+      if (data) profile = data;
     }
-    const state = readDb();
-    return state.profiles.find((p) => p.username.toLowerCase() === cleanUsername) || null;
+    if (!profile) {
+      const state = readDb();
+      profile = state.profiles.find((p) => p.username.toLowerCase() === cleanUsername) || null;
+    }
+    return sanitizeProfile(profile, false);
   },
 
   updateProfile: async (id: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
@@ -448,7 +497,7 @@ export const db = {
       if (supabaseDbAvailable) {
         await supabaseAdmin.from('profiles').insert(newProfile);
       }
-      return newProfile;
+      return sanitizeProfile(newProfile, false);
     }
 
     state.profiles[index] = { ...state.profiles[index], ...updates };
@@ -456,12 +505,28 @@ export const db = {
     if (supabaseDbAvailable) {
       await supabaseAdmin.from('profiles').update(updates).eq('id', id);
     }
-    return state.profiles[index];
+    return sanitizeProfile(state.profiles[index], false);
   },
 
   getAllUsers: async (currentUserId?: string): Promise<UserProfile[]> => {
     const state = readDb();
-    return state.profiles.filter((p) => !currentUserId || p.id !== currentUserId);
+    return state.profiles
+      .filter((p) => !currentUserId || p.id !== currentUserId)
+      .map((p) => sanitizeProfile(p, false));
+  },
+
+  /** Uso estrictamente interno para autenticación segura en el servidor */
+  getUserForAuth: async (identifier: string): Promise<UserProfile | null> => {
+    const state = readDb();
+    const clean = identifier.trim().toLowerCase();
+    return (
+      state.profiles.find(
+        (u) =>
+          u.username.toLowerCase() === clean ||
+          (u.email && u.email.toLowerCase() === clean) ||
+          u.id === clean
+      ) || null
+    );
   },
 
   registerUser: async (data: {
@@ -514,7 +579,7 @@ export const db = {
       await supabaseAdmin.from('profiles').insert(newProfile);
     }
 
-    return { user: newProfile };
+    return { user: sanitizeProfile(newProfile, true) };
   },
 
   // POSTS
@@ -576,9 +641,9 @@ export const db = {
       };
     });
 
-    return postsWithDetails.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    return postsWithDetails
+      .map((p) => sanitizePost(p))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
   getPostById: async (id: string, currentUserId?: string): Promise<any | null> => {
@@ -640,14 +705,14 @@ export const db = {
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    return {
+    return sanitizePost({
       ...post,
-      author,
+      author: sanitizeProfile(author, false),
       is_liked,
       is_reposted,
       is_bookmarked,
-      replies,
-    };
+      replies: replies.map((r) => sanitizePost(r)),
+    });
   },
 
   createPost: async (data: {
@@ -740,13 +805,13 @@ export const db = {
         }
       : authorProfile;
 
-    return {
+    return sanitizePost({
       ...newPost,
-      author,
+      author: sanitizeProfile(author, false),
       is_liked: false,
       is_reposted: false,
       is_bookmarked: false,
-    };
+    });
   },
 
   deletePost: async (postId: string, userId: string): Promise<boolean> => {
@@ -939,7 +1004,7 @@ export const db = {
       };
       conversations.push({
         id: otherId,
-        participant,
+        participant: sanitizeProfile(participant, false),
         last_message: lastMsg,
         unread_count: 0,
       });
