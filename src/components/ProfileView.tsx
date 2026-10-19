@@ -15,7 +15,6 @@ import {
   Search,
   MoreHorizontal,
   Lock,
-  BadgeCheck,
   ChevronRight,
   ChevronDown,
   Pencil,
@@ -40,7 +39,6 @@ interface ProfileViewProps {
   onHide?: (postId: string) => void;
   onOpenChat?: (user: UserProfile) => void;
   onOpenArticles?: () => void;
-  onOpenAi?: () => void;
 }
 
 /**
@@ -60,7 +58,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onHide,
   onOpenChat,
   onOpenArticles,
-  onOpenAi,
 }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -203,15 +200,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             Escribe artículos en Talma
           </h3>
           <p className="mt-2 text-[15px] text-[#71767b] leading-relaxed">
-            Cuando publiques un Artículo en Talma, se mostrará aquí. Solo las personas suscritas a
-            Premium pueden publicar Artículos.
+            Cuando publiques un Artículo en Talma, se mostrará aquí.
           </p>
-          <button
-            type="button"
-            className="mt-5 bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold text-[15px] rounded-full px-5 py-2.5 transition-colors cursor-pointer"
-          >
-            Suscríbete a Premium
-          </button>
         </div>
       );
     }
@@ -301,13 +291,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onOpenAi?.()}
-              aria-label="Abrir Talma AI"
-              className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition-transform"
-            >
-              <Ghost className="w-5 h-5" />
-            </button>
             <button
               onClick={() => setActiveTab('posts')}
               aria-label="Buscar en el perfil"
@@ -411,15 +394,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
             {isProtected && (
               <Lock className="w-4 h-4 text-[#e7e9ea] shrink-0" aria-label="Cuenta protegida" />
-            )}
-            {isMe && (
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="ml-1 flex items-center gap-1 border border-[#2f3336] hover:bg-white/[0.06] text-[#e7e9ea] rounded-full pl-2 pr-3 py-1 text-[14px] font-bold transition-colors cursor-pointer shrink-0"
-              >
-                <BadgeCheck className="w-4 h-4 text-[#1d9bf0] shrink-0" />
-                <span className="whitespace-nowrap">Obtener verificación</span>
-              </button>
             )}
           </div>
           <span className="text-sm text-[#71767b]">@{profile.username}</span>

@@ -15,17 +15,23 @@ app.use('*', cors({
 // Sub-router containing all Talma API logic
 const api = new Hono();
 
+// Antes de atender cualquier petición, espera a que el estado se haya cargado desde
+// la nube. Sin esto, una instancia serverless en frío arrancaría con el snapshot
+// semilla y los posts borrados volverían a aparecer.
+api.use('*', async (_c, next) => {
+  await db.ready();
+  await next();
+});
+
 // Health check
 api.get('/health', (c) => {
+  // Nunca exponer fragmentos de la secret key: este endpoint es público.
   return c.json({
     status: 'ok',
     app: 'Talma',
-    supabaseUrl: SUPABASE_URL,
     storageBucket: STORAGE_BUCKET,
     isSupabaseDbAvailable: db.isSupabaseAvailable(),
-    secretKeyPrefix: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.slice(0, 10) : 'none',
-    secretKeySuffix: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.slice(-6) : 'none',
-    secretKeyLength: SUPABASE_SECRET_KEY ? SUPABASE_SECRET_KEY.length : 0,
+    hasStorageCredentials: Boolean(SUPABASE_SECRET_KEY),
     time: new Date().toISOString(),
   });
 });

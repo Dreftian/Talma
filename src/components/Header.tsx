@@ -94,18 +94,6 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
           <TalmaLogo size="md" variant="icon" />
         </div>
-
-        {/* Premium CTA pill (refs 123123123.jpeg / 5.58.20 PM: "✅ Actualizar a nivel…") */}
-        <button
-          type="button"
-          title="Actualizar a nivel Premium"
-          className="shrink-0 flex items-center gap-1 rounded-full bg-[#1d9bf0] hover:bg-[#1a8cd8] active:scale-95 transition-all pl-2 pr-2.5 py-1.5 text-white"
-        >
-          <Check className="w-4 h-4 shrink-0 stroke-[3]" />
-          <span className="text-[13px] font-bold leading-none truncate max-w-[74px]">
-            Actualizar a nivel
-          </span>
-        </button>
       </div>
 
       {/* Tabs: Para ti, Siguiendo, Extalmita */}

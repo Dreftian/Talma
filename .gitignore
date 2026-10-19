@@ -28,6 +28,10 @@ desktop.ini
 *.sublime-project
 *.sublime-workspace
 
+# Runtime database snapshot (the source of truth is Supabase Storage; a committed
+# snapshot resurrects deleted posts on every cold start of the serverless deploy)
+data/
+
 # Debug and Logs
 logs/
 *.log

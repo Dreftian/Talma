@@ -12,11 +12,7 @@ import {
   LogOut,
   CheckCircle2,
   UserPlus,
-  Mic2,
-  Sparkles,
-  Rocket,
   Lock,
-  BadgeCheck,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { getStoredTheme, setAppTheme, AppTheme } from '../lib/theme';
@@ -33,10 +29,8 @@ interface MobileDrawerProps {
   onSelectProfile: (username: string) => void;
   onOpenAuth: () => void;
   onLogout?: () => void;
-  onOpenArticles?: () => void;
   onOpenCommunities?: () => void;
   onOpenFollowRequests?: () => void;
-  onOpenAi?: () => void;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -47,10 +41,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onSelectProfile,
   onOpenAuth,
   onLogout,
-  onOpenArticles,
   onOpenCommunities,
   onOpenFollowRequests,
-  onOpenAi,
 }) => {
   const [currentTheme, setCurrentTheme] = useState<AppTheme>(getStoredTheme());
   const isProtected = Boolean((currentUser as ProfileWithPrivacy).is_protected);
@@ -143,24 +135,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <span>Perfil</span>
             </button>
 
-            {/* 2. Premium + píldora "50% de descuento" */}
-            <button
-              onClick={() => {
-                onSelectTab('settings');
-                onClose();
-              }}
-              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
-            >
-              <BadgeCheck className="w-5 h-5 text-[#e7e9ea]" />
-              <span className="flex items-center gap-2 min-w-0">
-                <span>Premium</span>
-                <span className="shrink-0 bg-[#1d9bf0] text-white text-[11px] font-bold leading-none rounded-full px-2 py-1">
-                  50% de descuento
-                </span>
-              </span>
-            </button>
-
-            {/* 3. Comunidades */}
+            {/* 2. Comunidades */}
             <button
               onClick={() => {
                 onClose();
@@ -173,7 +148,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <span>Comunidades</span>
             </button>
 
-            {/* 4. Guardados */}
+            {/* 3. Guardados */}
             <button
               onClick={() => {
                 onSelectTab('bookmarks');
@@ -185,7 +160,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <span>Guardados</span>
             </button>
 
-            {/* 5. Listas */}
+            {/* 4. Listas */}
             <button
               onClick={() => {
                 onSelectTab('home');
@@ -197,17 +172,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <span>Listas</span>
             </button>
 
-            {/* 6. Espacios (ref 4.jpeg / 5.jpeg) */}
-            <button
-              onClick={() => onClose()}
-              title="Espacios"
-              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
-            >
-              <Mic2 className="w-5 h-5 text-[#e7e9ea]" />
-              <span>Espacios</span>
-            </button>
-
-            {/* 7. Solicitudes de seguimiento */}
+            {/* 5. Solicitudes de seguimiento */}
             <button
               onClick={() => {
                 onClose();
@@ -218,35 +183,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <UserPlus className="w-5 h-5 text-[#e7e9ea]" />
               <span>Solicitudes de seguimiento</span>
             </button>
-
-            {/* 8. Estudio para creadores (abre el estudio de artículos/borradores) */}
-            <button
-              onClick={() => {
-                onClose();
-                if (onOpenArticles) onOpenArticles();
-              }}
-              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
-            >
-              <Rocket className="w-5 h-5 text-[#e7e9ea]" />
-              <span>Estudio para creadores</span>
-            </button>
           </nav>
 
           <div className="h-px bg-[#2f3336] my-3" />
 
           {/* Bloque de iconos pequeños: icono 18px + label 15px normal (ref 5.jpeg) */}
           <div className="flex flex-col gap-1">
-            <button
-              onClick={() => {
-                onClose();
-                onOpenAi?.();
-              }}
-              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
-            >
-              <Sparkles className="w-[18px] h-[18px] text-[#71767b] shrink-0" />
-              <span>Abrir Talma AI</span>
-            </button>
-
             <button
               onClick={() => {
                 onSelectTab('settings');

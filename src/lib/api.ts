@@ -8,7 +8,8 @@ export async function fetchPosts(userId?: string, tab: string = 'for_you', usern
   if (tab) params.append('tab', tab);
   if (username) params.append('username', username);
 
-  const res = await fetch(`${API_BASE}/api/posts?${params.toString()}`);
+  // cache: 'no-store' evita que el navegador sirva un feed antiguo (con posts ya borrados) al recargar.
+  const res = await fetch(`${API_BASE}/api/posts?${params.toString()}`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Error al cargar posts');
   return res.json();
 }
@@ -17,7 +18,7 @@ export async function fetchPostById(id: string, userId?: string): Promise<Post> 
   const params = new URLSearchParams();
   if (userId) params.append('userId', userId);
 
-  const res = await fetch(`${API_BASE}/api/posts/${id}?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/api/posts/${id}?${params.toString()}`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Post no encontrado');
   return res.json();
 }
@@ -45,11 +46,22 @@ export async function createPost(data: {
   return res.json();
 }
 
+/**
+ * Elimina un post en el servidor.
+ * Devuelve true SOLO si el backend confirmó el borrado; el llamador NO debe
+ * quitar el post de la UI cuando devuelve false (antes se hacía y el post
+ * reaparecía al recargar).
+ */
 export async function deletePost(id: string, userId: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/posts/${id}?userId=${encodeURIComponent(userId)}`, {
-    method: 'DELETE',
-  });
-  return res.ok;
+  try {
+    const res = await fetch(`${API_BASE}/api/posts/${id}?userId=${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+      cache: 'no-store',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function hidePost(id: string, userId: string): Promise<boolean> {

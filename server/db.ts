@@ -84,6 +84,8 @@ interface DatabaseSchema {
   reposts: { user_id: string; post_id: string; created_at: string }[];
   bookmarks: { user_id: string; post_id: string; created_at: string }[];
   hidden_posts?: { user_id: string; post_id: string; hidden_at: string }[];
+  /** Tombstones: posts eliminados que NUNCA deben resucitar desde un snapshot remoto obsoleto. */
+  deleted_posts?: string[];
   follows: { follower_id: string; following_id: string; created_at: string }[];
   messages: MessageItem[];
 }
@@ -158,28 +160,110 @@ const INITIAL_DB: DatabaseSchema = {
   reposts: [],
   bookmarks: [],
   hidden_posts: [],
+  deleted_posts: [],
   follows: [],
   messages: [],
 };
 
 let memoryDb: DatabaseSchema | null = null;
 const CLOUD_DB_KEY = 'system/talma_db.json';
+/** Timestamp de la última escritura local: bloquea las lecturas de nube para no pisar cambios recientes. */
+let lastLocalWriteAt = 0;
+/** Momento de la última sincronización desde la nube. */
 let lastCloudFetch = 0;
-let isSyncingToCloud = false;
+/** El push se ENCOLA (no se descarta) para no perder borrados cuando hay escrituras concurrentes. */
+let pushChain: Promise<void> = Promise.resolve();
+const TOMBSTONE_LIMIT = 1000;
+const LOCAL_WRITE_GRACE_MS = 8000;
+/** true cuando memoryDb se sembró desde INITIAL_DB (no desde un archivo real). */
+let seededFromInitial = false;
+/** Promesa del bootstrap de nube: se resuelve cuando ya se intentó leer el snapshot remoto. */
+let cloudReady: Promise<void> | null = null;
+
+/** Lista normalizada de ids de posts eliminados. */
+function tombstonesOf(state: DatabaseSchema): string[] {
+  return Array.isArray(state.deleted_posts) ? state.deleted_posts : [];
+}
+
+/**
+ * Fusiona un snapshot remoto con el estado local aplicando las tombstones de borrado
+ * en ambos sentidos: nunca resucita un post borrado localmente, y absorbe los borrados
+ * hechos por otras instancias para que no vuelvan a aparecer.
+ */
+function mergeRemoteSnapshot(local: DatabaseSchema | null, remote: DatabaseSchema): DatabaseSchema {
+  const merged: DatabaseSchema = JSON.parse(JSON.stringify(remote));
+  const tombstones = new Set<string>(tombstonesOf(merged));
+  if (local) {
+    for (const id of tombstonesOf(local)) tombstones.add(id);
+  }
+
+  merged.deleted_posts = Array.from(tombstones).slice(-TOMBSTONE_LIMIT);
+  merged.posts = (Array.isArray(merged.posts) ? merged.posts : []).filter((p) => !tombstones.has(p.id));
+  if (local && !seededFromInitial) {
+    // Preserva los posts locales que el remoto todavía no conoce (push pendiente / escritura reciente).
+    // Nunca se preserva la semilla INITIAL_DB: si el archivo no existía, la nube es la fuente de verdad.
+    const remoteIds = new Set(merged.posts.map((p) => p.id));
+    for (const post of local.posts) {
+      if (!remoteIds.has(post.id) && !tombstones.has(post.id)) merged.posts.push(post);
+    }
+  }
+
+  // Reconstruye los contadores de interacción a partir de las tablas de relaciones
+  // (así un like/repost/bookmark eliminado no queda contado para siempre).
+  merged.likes = Array.isArray(merged.likes) ? merged.likes.filter((l) => !tombstones.has(l.post_id)) : [];
+  merged.reposts = Array.isArray(merged.reposts) ? merged.reposts.filter((r) => !tombstones.has(r.post_id)) : [];
+  merged.bookmarks = Array.isArray(merged.bookmarks) ? merged.bookmarks.filter((b) => !tombstones.has(b.post_id)) : [];
+  if (Array.isArray(merged.hidden_posts)) {
+    merged.hidden_posts = merged.hidden_posts.filter((h) => !tombstones.has(h.post_id));
+  }
+
+  // Si el remoto trae un post que localmente ya estaba borrado, la tombstone gana.
+  return merged;
+}
+
+/**
+ * Carga el snapshot local del disco si aún no está en memoria.
+ * Es imprescindible ANTES de fusionar un snapshot remoto: si la nube está obsoleta y
+ * memoryDb es null, las tombstones locales se perderían y los posts borrados resucitarían.
+ */
+function hydrateFromDisk(): DatabaseSchema | null {
+  try {
+    if (!fs.existsSync(DB_PATH)) return null;
+    const parsed = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+    if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.some((p: any) => p.id === 'admin')) {
+      if (!Array.isArray(parsed.deleted_posts)) parsed.deleted_posts = [];
+      return parsed as DatabaseSchema;
+    }
+  } catch {
+    // Archivo corrupto o ilegible: se ignora y se sigue con la nube.
+  }
+  return null;
+}
 
 // Async function to load cloud DB from Supabase Storage
 async function syncFromCloud(): Promise<DatabaseSchema | null> {
+  // Nunca fusionar contra un estado vacío: el local es la fuente de las tombstones.
+  if (!memoryDb) {
+    const local = hydrateFromDisk();
+    if (local) memoryDb = local;
+  }
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${CLOUD_DB_KEY}?t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.profiles) && Array.isArray(data.posts)) {
-        memoryDb = data;
+        // Nunca pisar una escritura local reciente con un snapshot potencialmente obsoleto.
+        if (Date.now() - lastLocalWriteAt < LOCAL_WRITE_GRACE_MS) {
+          lastCloudFetch = Date.now();
+          return memoryDb;
+        }
+        const merged = mergeRemoteSnapshot(memoryDb, data as DatabaseSchema);
+        memoryDb = merged;
         lastCloudFetch = Date.now();
         try {
-          fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+          fs.writeFileSync(DB_PATH, JSON.stringify(merged, null, 2), 'utf-8');
         } catch {}
-        return data;
+        return merged;
       }
     }
   } catch (err) {
@@ -190,31 +274,53 @@ async function syncFromCloud(): Promise<DatabaseSchema | null> {
 
 // Async function to push updated DB to Supabase Storage
 async function pushToCloud(data: DatabaseSchema): Promise<void> {
-  if (isSyncingToCloud) return;
-  isSyncingToCloud = true;
-  try {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${CLOUD_DB_KEY}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_SECRET_KEY,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: JSON.stringify(data),
+  // Se ENCOLA en serie: los pushes concurrentes ya no se descartan (antes un borrado se perdía).
+  const snapshot = JSON.parse(JSON.stringify(data)) as DatabaseSchema;
+  pushChain = pushChain
+    .catch(() => {})
+    .then(async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${CLOUD_DB_KEY}`, {
+          method: 'POST',
+          headers: {
+            // Supabase Storage exige AMBOS headers: apikey y Authorization (Bearer).
+            // Sin Authorization responde 400 "headers must have required property 'authorization'"
+            // y el push se perdía en silencio.
+            'apikey': SUPABASE_SECRET_KEY,
+            'Authorization': `Bearer ${SUPABASE_SECRET_KEY}`,
+            'Content-Type': 'application/json',
+            'x-upsert': 'true',
+          },
+          body: JSON.stringify(snapshot),
+        });
+        if (!res.ok) {
+          console.error('Failed to push DB to Supabase Storage:', res.status, await res.text().catch(() => ''));
+        }
+      } catch (err) {
+        console.error('Failed to push DB to Supabase Storage:', err);
+      }
     });
-  } catch (err) {
-    console.error('Failed to push DB to Supabase Storage:', err);
-  } finally {
-    isSyncingToCloud = false;
-  }
+  return pushChain;
 }
 
-// Initial background sync
-syncFromCloud().catch(() => {});
+/**
+ * Bootstrap de la nube: se ejecuta UNA vez y debe completarse antes de atender la
+ * primera petición, para que una instancia fría (Vercel) nunca arranque con el
+ * snapshot semilla e intente subirlo pisando los datos reales.
+ */
+function ensureCloudReady(): Promise<void> {
+  if (!cloudReady) {
+    cloudReady = syncFromCloud().then(() => undefined).catch(() => undefined);
+  }
+  return cloudReady;
+}
+
+// Se lanza en cuanto se importa el módulo (no bloquea).
+ensureCloudReady();
 
 function readDb(): DatabaseSchema {
   if (memoryDb && memoryDb.profiles && memoryDb.profiles.some((p) => p.id === 'admin')) {
-    if (Date.now() - lastCloudFetch > 2500) {
+    if (Date.now() - lastCloudFetch > 2500 && Date.now() - lastLocalWriteAt > LOCAL_WRITE_GRACE_MS) {
       syncFromCloud().catch(() => {});
     }
     return memoryDb;
@@ -224,6 +330,7 @@ function readDb(): DatabaseSchema {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
       const parsed = JSON.parse(data);
       if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin')) {
+        if (!Array.isArray(parsed.deleted_posts)) parsed.deleted_posts = [];
         memoryDb = parsed;
         syncFromCloud().catch(() => {});
         return memoryDb!;
@@ -232,14 +339,24 @@ function readDb(): DatabaseSchema {
   } catch (err) {
     console.error('Error reading DB file, using fallback:', err);
   }
-  memoryDb = JSON.parse(JSON.stringify(INITIAL_DB));
-  writeDb(memoryDb!);
+  // Sin archivo local: arranca con la semilla pero NO la sube a la nube (podría pisar datos reales).
+  const seed: DatabaseSchema = JSON.parse(JSON.stringify(INITIAL_DB));
+  seed.deleted_posts = [];
+  memoryDb = seed;
+  seededFromInitial = true;
+  try {
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+    fs.writeFileSync(DB_PATH, JSON.stringify(seed, null, 2), 'utf-8');
+  } catch {
+    // FS de solo lectura (serverless): el estado vive solo en memoria + nube.
+  }
   syncFromCloud().catch(() => {});
-  return memoryDb!;
+  return seed;
 }
 
 function writeDb(data: DatabaseSchema): void {
   memoryDb = data;
+  lastLocalWriteAt = Date.now();
   lastCloudFetch = Date.now();
   try {
     const dir = path.dirname(DB_PATH);
@@ -272,6 +389,10 @@ async function checkSupabaseDb() {
 checkSupabaseDb();
 
 export const db = {
+  /** Espera a que el bootstrap desde la nube termine (la primera petición no debe
+   *  arrancar con el snapshot semilla). */
+  ready: (): Promise<void> => ensureCloudReady(),
+
   isSupabaseAvailable: () => supabaseDbAvailable,
 
   // PROFILES
@@ -404,7 +525,8 @@ export const db = {
         .filter((h) => h.user_id === currentUserId)
         .map((h) => h.post_id)
     );
-    const visiblePosts = state.posts.filter((p) => !hiddenSet.has(p.id));
+    const tombstoneSet = new Set(tombstonesOf(state));
+    const visiblePosts = state.posts.filter((p) => !hiddenSet.has(p.id) && !tombstoneSet.has(p.id));
 
     // Return posts with author profile and user reaction states
     const postsWithDetails = visiblePosts.map((post) => {
@@ -632,19 +754,61 @@ export const db = {
     const isAdmin = userId === 'admin' || userId === 'user-admin';
     const index = state.posts.findIndex((p) => p.id === postId && (isAdmin || p.user_id === userId));
     if (index === -1) return false;
-    state.posts.splice(index, 1);
-    if (state.hidden_posts) {
-      state.hidden_posts = state.hidden_posts.filter((h) => h.post_id !== postId);
+
+    // Elimina el post y todos sus descendientes (respuestas anidadas).
+    const toDelete = new Set<string>([postId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const post of state.posts) {
+        if (post.reply_to_id && toDelete.has(post.reply_to_id) && !toDelete.has(post.id)) {
+          toDelete.add(post.id);
+          changed = true;
+        }
+      }
     }
-    state.likes = state.likes.filter((l) => l.post_id !== postId);
-    state.reposts = state.reposts.filter((r) => r.post_id !== postId);
-    state.bookmarks = state.bookmarks.filter((b) => b.post_id !== postId);
+
+    // Decrementa replies_count del post padre si se está borrando una respuesta.
+    const target = state.posts[index];
+    if (target && target.reply_to_id) {
+      const parent = state.posts.find((p) => p.id === target.reply_to_id);
+      if (parent && typeof parent.replies_count === 'number') {
+        parent.replies_count = Math.max(0, parent.replies_count - 1);
+      }
+    }
+
+    state.posts = state.posts.filter((p) => !toDelete.has(p.id));
+    if (state.hidden_posts) {
+      state.hidden_posts = state.hidden_posts.filter((h) => !toDelete.has(h.post_id));
+    }
+    state.likes = state.likes.filter((l) => !toDelete.has(l.post_id));
+    state.reposts = state.reposts.filter((r) => !toDelete.has(r.post_id));
+    state.bookmarks = state.bookmarks.filter((b) => !toDelete.has(b.post_id));
+
+    // TOMBSTONES: los ids borrados se recuerdan para que ningún snapshot remoto obsoleto
+    // (o el archivo data/talma_db.json commiteado en el deploy) pueda resucitarlos.
+    const tombstones = new Set<string>(tombstonesOf(state));
+    for (const id of toDelete) tombstones.add(id);
+    state.deleted_posts = Array.from(tombstones).slice(-TOMBSTONE_LIMIT);
+
     writeDb(state);
+
+    // Persistencia en la nube: espera explícita para que el borrado no se pierda si la
+    // función serverless se congela justo después de responder.
+    try {
+      await pushToCloud(state);
+    } catch {}
+
     if (supabaseDbAvailable) {
-      if (isAdmin) {
-        await supabaseAdmin.from('posts').delete().eq('id', postId);
-      } else {
-        await supabaseAdmin.from('posts').delete().eq('id', postId).eq('user_id', userId);
+      const ids = Array.from(toDelete);
+      try {
+        if (isAdmin) {
+          await supabaseAdmin.from('posts').delete().in('id', ids);
+        } else {
+          await supabaseAdmin.from('posts').delete().in('id', ids).eq('user_id', userId);
+        }
+      } catch (err) {
+        console.error('Supabase delete notice:', err);
       }
     }
     return true;

@@ -8,7 +8,6 @@ import {
   Share,
   MoreHorizontal,
   CheckCircle2,
-  Ghost,
   Trash2,
   EyeOff,
   Link as LinkIcon,
@@ -240,17 +239,8 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             </span>
           </div>
 
-          {/* Ghost (AI) + more options, mirroring the reference post header */}
+          {/* More options, mirroring the reference post header */}
           <div className="flex items-center gap-0.5 shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              title="Preguntar a Talma AI"
-              className="p-1.5 text-[#71767b] hover:text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
-            >
-              <Ghost className="w-4 h-4" />
-            </button>
           <div className="relative">
             <button
               onClick={(e) => {

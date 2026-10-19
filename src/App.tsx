@@ -26,7 +26,6 @@ import {
   Bell,
   MessageCircle,
   Plus,
-  Sparkles,
 } from 'lucide-react';
 
 export default function App() {
@@ -61,7 +60,7 @@ export default function App() {
   const [showFollowRequestsModal, setShowFollowRequestsModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
-  const [showAiSheet, setShowAiSheet] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Contadores dinámicos del bottom nav (solo se pintan cuando son > 0).
   // - Mensajes: suma de conversaciones no leídas que ya expone la API.
@@ -136,15 +135,25 @@ export default function App() {
 
   const handleDeletePost = async (postId: string) => {
     if (!currentUser) return;
+    setDeleteError(null);
+    let ok = false;
     try {
-      await deletePost(postId, currentUser.id);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
-      if (selectedPostId === postId) {
-        setSelectedPostId(null);
-      }
+      ok = await deletePost(postId, currentUser.id);
     } catch (err) {
-      console.error(err);
+      console.error('Error deleting post:', err);
+      ok = false;
     }
+    if (!ok) {
+      // No tocamos el estado local: el post sigue en el servidor y reaparecería al recargar.
+      setDeleteError('No se pudo eliminar el post. Inténtalo de nuevo.');
+      return;
+    }
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    if (selectedPostId === postId) {
+      setSelectedPostId(null);
+    }
+    // Reconciliamos con el servidor para no dejar el feed desincronizado.
+    await loadFeed();
   };
 
   const handleHidePost = async (postId: string) => {
@@ -207,6 +216,24 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-[#e7e9ea] flex justify-center">
+      {/* Aviso si el borrado del post falla en el servidor (el post no se quita del feed) */}
+      {deleteError && (
+        <div
+          role="alert"
+          className="fixed top-3 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm flex items-start gap-3 rounded-2xl border border-red-500/40 bg-[#16181c] px-4 py-3 shadow-2xl shadow-black/60 animate-pop-in"
+        >
+          <span className="flex-1 text-[14px] leading-snug text-[#e7e9ea]">{deleteError}</span>
+          <button
+            type="button"
+            onClick={() => setDeleteError(null)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 p-1 -m-1 rounded-full text-[#71767b] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div className="flex w-full max-w-[1280px]">
         {/* Left Sidebar - Exact X Web Desktop Experience */}
         <Sidebar
@@ -247,7 +274,6 @@ export default function App() {
               onHide={handleHidePost}
               onOpenChat={handleOpenChat}
               onOpenArticles={() => setShowArticlesModal(true)}
-              onOpenAi={() => setShowAiSheet(true)}
             />
           ) : currentTab === 'messages' ? (
             <MessagesView
@@ -426,19 +452,6 @@ export default function App() {
             <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5] text-white' : ''}`} />
           </button>
 
-          {/* Centro: Talma AI (equivalente al icono Grok/destello de las refs) */}
-          <button
-            onClick={() => setShowAiSheet(true)}
-            className={`flex-1 flex justify-center py-2 transition-colors ${
-              showAiSheet ? 'text-white' : 'text-[#71767b]'
-            }`}
-            title="Talma AI"
-          >
-            <Sparkles
-              className={`w-6 h-6 ${showAiSheet ? 'stroke-[2.5] text-white' : ''}`}
-            />
-          </button>
-
           <button
             onClick={() => handleSelectTab('notifications')}
             className={`flex-1 flex justify-center py-2 relative transition-colors ${
@@ -475,41 +488,6 @@ export default function App() {
         </nav>
       )}
 
-      {/* Talma AI sheet (mobile bottom nav center icon, mirrors the Grok entry in the refs) */}
-      {showAiSheet && (
-        <div className="fixed inset-0 z-50 sm:hidden">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-xs"
-            onClick={() => setShowAiSheet(false)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-black border-t border-[#2f3336] rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] animate-pop-in">
-            <div className="w-9 h-1 rounded-full bg-[#2f3336] mx-auto mb-4" />
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-5 h-5 text-[#1d9bf0]" />
-              <h2 className="text-[17px] font-extrabold text-white">Talma AI</h2>
-            </div>
-            <p className="text-[13px] text-[#71767b] leading-normal mb-4">
-              Resúmenes, ideas y contexto sobre lo que está pasando en Talma.
-            </p>
-            <div className="flex flex-col gap-2">
-              {[
-                'Resume las tendencias de hoy',
-                'Explícame este post',
-                'Sugiéreme ideas para postear',
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => setShowAiSheet(false)}
-                  className="w-full text-left px-4 py-3 rounded-2xl bg-[#16181c] hover:bg-[#1d1f23] text-[15px] text-[#e7e9ea] transition-colors cursor-pointer"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mobile Slide-Out Drawer Navigation (Triggered by mobile header avatar) */}
       <MobileDrawer
         isOpen={isMobileDrawerOpen}
@@ -519,10 +497,8 @@ export default function App() {
         onSelectProfile={handleSelectProfile}
         onOpenAuth={() => setShowAuthModal(true)}
         onLogout={handleLogout}
-        onOpenArticles={() => setShowArticlesModal(true)}
         onOpenCommunities={() => setShowCommunitiesModal(true)}
         onOpenFollowRequests={() => setShowFollowRequestsModal(true)}
-        onOpenAi={() => setShowAiSheet(true)}
       />
 
       {/* Articles Modal (matches 13.jpeg) */}

@@ -13,7 +13,6 @@ import {
   EyeOff,
   Link as LinkIcon,
   Image as ImageIcon,
-  Ghost,
   Film,
   Maximize2,
   X,
@@ -197,9 +196,7 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <span className="absolute left-1/2 -translate-x-1/2 font-extrabold text-[20px] text-white">Post</span>
-          <button className="p-2 -mr-2 rounded-full hover:bg-[#181818] transition-colors cursor-pointer" title="Talma AI">
-            <Ghost className="w-5 h-5 text-white" />
-          </button>
+          <span className="p-2 -mr-2 w-9" aria-hidden="true" />
         </div>
         <div className="p-8 text-center text-[#71767b]">Cargando post...</div>
       </div>
@@ -362,15 +359,13 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header móvil: ← | "Post" | 🕊️ (ref "WhatsApp Imag2223e 2026-10-18 at 5.58.28 PM.jpeg") */}
+      {/* Header móvil: ← | "Post" */}
       <div className="relative sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
         <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#181818] transition-colors cursor-pointer" title="Volver">
           <ArrowLeft className="w-5 h-5 text-white" />
         </button>
         <span className="absolute left-1/2 -translate-x-1/2 font-extrabold text-[20px] text-white">Post</span>
-        <button className="p-2 -mr-2 rounded-full hover:bg-[#181818] transition-colors cursor-pointer" title="Talma AI">
-          <Ghost className="w-5 h-5 text-white" />
-        </button>
+        <span className="p-2 -mr-2 w-9" aria-hidden="true" />
       </div>
 
       <div className="flex-1 flex flex-col">
