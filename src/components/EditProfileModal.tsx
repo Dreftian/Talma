@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, X, Camera, Loader2, Calendar } from 'lucide-react';
+import { ArrowLeft, X, Camera, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { updateProfile, uploadMedia } from '../lib/api';
+import { getSafeAvatarUrl } from '../lib/avatar';
 
 interface EditProfileModalProps {
   profile: UserProfile;
@@ -18,7 +19,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [bio, setBio] = useState(profile.bio || '');
   const [location, setLocation] = useState(profile.location || '');
   const [website, setWebsite] = useState(profile.website || '');
-  const [birthDate, setBirthDate] = useState('2002-01-18');
+  // Campo local: UserProfile no incluye fecha de nacimiento, así que se mantiene
+  // solo en el estado del formulario para no romper el guardado.
+  const [birthDate, setBirthDate] = useState('marzo 23, 1998');
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '');
   const [bannerUrl, setBannerUrl] = useState(profile.banner_url || '');
   const [saving, setSaving] = useState(false);
@@ -94,7 +97,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="bg-white hover:bg-white/90 text-black font-extrabold px-5 py-1.5 rounded-full text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold px-4 py-1.5 rounded-full text-[15px] transition-colors active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
           </button>
@@ -140,7 +143,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <div className="px-4 relative -mt-14 mb-4 flex">
             <div className="relative w-28 h-28 rounded-full border-4 border-black overflow-hidden bg-[#16181c] flex items-center justify-center">
               <img
-                src={avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'}
+                src={getSafeAvatarUrl(avatarUrl)}
                 alt="Avatar"
                 className="w-full h-full object-cover"
               />
@@ -164,80 +167,92 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           {/* Fields with character count labels matching 8.jpeg */}
           <div className="px-4 flex flex-col gap-4">
             {/* Nombre */}
-            <div className="border border-[#2f3336] rounded-xl p-3 focus-within:border-[#1d9bf0] transition-colors bg-transparent">
-              <div className="flex items-center justify-between text-xs text-[#71767b]">
-                <label className="font-medium">Nombre</label>
+            <div className="border-b border-[#2f3336] pb-2 focus-within:border-b-[#1d9bf0] transition-colors">
+              <div className="flex items-center justify-between text-[13px] text-[#71767b]">
+                <label htmlFor="edit-display-name">Nombre</label>
                 <span>{displayName.length} / 50</span>
               </div>
               <input
+                id="edit-display-name"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={50}
-                className="w-full bg-transparent text-[#e7e9ea] outline-none text-base mt-1"
+                className="w-full bg-transparent text-[#e7e9ea] outline-none text-[17px] mt-1 placeholder-[#71767b]"
               />
             </div>
 
             {/* Biografía */}
-            <div className="border border-[#2f3336] rounded-xl p-3 focus-within:border-[#1d9bf0] transition-colors bg-transparent">
-              <div className="flex items-center justify-between text-xs text-[#71767b]">
-                <label className="font-medium">Biografía</label>
+            <div className="border-b border-[#2f3336] pb-2 focus-within:border-b-[#1d9bf0] transition-colors">
+              <div className="flex items-center justify-between text-[13px] text-[#71767b]">
+                <label htmlFor="edit-bio">Biografía</label>
                 <span>{bio.length} / 160</span>
               </div>
               <textarea
+                id="edit-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
                 maxLength={160}
-                className="w-full bg-transparent text-[#e7e9ea] outline-none text-base mt-1 resize-none"
+                className="w-full bg-transparent text-[#e7e9ea] outline-none text-[17px] mt-1 resize-none"
               />
             </div>
 
             {/* Ubicación */}
-            <div className="border border-[#2f3336] rounded-xl p-3 focus-within:border-[#1d9bf0] transition-colors bg-transparent">
-              <div className="flex items-center justify-between text-xs text-[#71767b]">
-                <label className="font-medium">Ubicación</label>
+            <div className="border-b border-[#2f3336] pb-2 focus-within:border-b-[#1d9bf0] transition-colors">
+              <div className="flex items-center justify-between text-[13px] text-[#71767b]">
+                <label htmlFor="edit-location">Ubicación</label>
                 <span>{location.length} / 30</span>
               </div>
               <input
+                id="edit-location"
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 maxLength={30}
-                className="w-full bg-transparent text-[#e7e9ea] outline-none text-base mt-1"
+                className="w-full bg-transparent text-[#e7e9ea] outline-none text-[17px] mt-1 placeholder-[#71767b]"
               />
             </div>
 
             {/* Sitio web */}
-            <div className="border border-[#2f3336] rounded-xl p-3 focus-within:border-[#1d9bf0] transition-colors bg-transparent">
-              <div className="flex items-center justify-between text-xs text-[#71767b]">
-                <label className="font-medium">Sitio web</label>
+            <div className="border-b border-[#2f3336] pb-2 focus-within:border-b-[#1d9bf0] transition-colors">
+              <div className="flex items-center justify-between text-[13px] text-[#71767b]">
+                <label htmlFor="edit-website">Sitio web</label>
                 <span>{website.length} / 100</span>
               </div>
               <input
+                id="edit-website"
                 type="text"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
                 maxLength={100}
-                className="w-full bg-transparent text-[#e7e9ea] outline-none text-base mt-1"
+                className="w-full bg-transparent text-[#e7e9ea] outline-none text-[17px] mt-1 placeholder-[#71767b]"
               />
             </div>
 
-            {/* Fecha de nacimiento (matches 8.jpeg & 9.jpeg) */}
-            <div className="border border-[#2f3336] rounded-xl p-3 focus-within:border-[#1d9bf0] transition-colors bg-transparent">
-              <div className="flex items-center justify-between text-xs text-[#71767b]">
-                <label className="font-medium">Fecha de nacimiento</label>
-                <span className="text-[#1d9bf0] font-semibold cursor-pointer">Editar</span>
+            {/* Fecha de nacimiento (ref "Editar perfil") */}
+            <div className="border-b border-[#2f3336] pb-2 focus-within:border-b-[#1d9bf0] transition-colors">
+              <div className="flex items-center justify-between text-[13px] text-[#71767b]">
+                <label htmlFor="edit-birth-date">Fecha de nacimiento</label>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('edit-birth-date')?.focus()}
+                  className="text-[#1d9bf0] font-semibold hover:underline cursor-pointer"
+                >
+                  Editar
+                </button>
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Calendar className="w-4 h-4 text-[#71767b]" />
-                <input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="bg-transparent text-white outline-none text-base cursor-pointer"
-                />
-              </div>
+              <input
+                id="edit-birth-date"
+                type="text"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                placeholder="Mes día, año"
+                className="w-full bg-transparent text-[#e7e9ea] outline-none text-[17px] mt-1 placeholder-[#71767b]"
+              />
+              <p className="text-[13px] text-[#71767b] mt-1 leading-snug">
+                Mes y día: Tus seguidores / Año: Solo tú
+              </p>
             </div>
           </div>
         </div>

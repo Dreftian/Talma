@@ -31,6 +31,7 @@ desktop.ini
 # Debug and Logs
 logs/
 *.log
+.shots/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

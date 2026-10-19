@@ -15,6 +15,7 @@ import {
 import { UserProfile, MediaAttachment } from '../types';
 import { uploadMedia, createPost } from '../lib/api';
 import { MediaPreview } from './MediaPreview';
+import { getSafeAvatarUrl } from '../lib/avatar';
 
 interface TweetComposerProps {
   currentUser: UserProfile;
@@ -253,7 +254,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
         </div>
       ) : (
         <img
-          src={currentUser.avatar_url || 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png'}
+          src={getSafeAvatarUrl(currentUser.avatar_url)}
           alt={currentUser.display_name}
           className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
         />

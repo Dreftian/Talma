@@ -24,6 +24,7 @@ import {
   fetchRegisteredUsers,
 } from '../lib/api';
 import { formatRelativeTime } from '../lib/utils';
+import { getSafeAvatarUrl } from '../lib/avatar';
 
 interface MessagesViewProps {
   currentUser: UserProfile;
@@ -159,7 +160,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             title="Abrir menú"
           >
             <img
-              src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+              src={getSafeAvatarUrl(currentUser.avatar_url)}
               alt={currentUser.display_name}
               className="w-8 h-8 rounded-full object-cover border border-[#2f3336]"
             />
@@ -230,28 +231,25 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   }`}
                 >
                   <img
-                    src={conv.participant.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                    src={getSafeAvatarUrl(conv.participant.avatar_url)}
                     alt={conv.participant.display_name}
-                    className="w-12 h-12 rounded-full object-cover border border-[#2f3336] shrink-0"
+                    className="w-14 h-14 rounded-full object-cover shrink-0"
                   />
                   <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 truncate">
-                        <span className="font-bold text-[15px] text-white truncate">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="font-bold text-[17px] text-[#e7e9ea] truncate">
                           {conv.participant.display_name}
                         </span>
                         {conv.participant.is_verified && (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
+                          <CheckCircle2 className="w-[18px] h-[18px] text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
                         )}
-                        <span className="text-xs text-[#71767b]">
-                          @{conv.participant.username}
-                        </span>
                       </div>
-                      <span className="text-xs text-[#71767b]">
+                      <span className="text-[13px] text-[#71767b] shrink-0">
                         {formatRelativeTime(conv.last_message.created_at)}
                       </span>
                     </div>
-                    <p className="text-sm text-[#71767b] truncate mt-0.5">
+                    <p className="text-[15px] text-[#71767b] truncate mt-0.5">
                       {conv.last_message.content || 'Archivo multimedia adjunto'}
                     </p>
                   </div>
@@ -298,7 +296,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <img
-                  src={activeUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                  src={getSafeAvatarUrl(activeUser.avatar_url)}
                   alt={activeUser.display_name}
                   className="w-10 h-10 rounded-full object-cover border border-[#2f3336]"
                 />
@@ -332,7 +330,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               {/* Profile Card at top of thread */}
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center border-b border-[#2f3336]/60 mb-2">
                 <img
-                  src={activeUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                  src={getSafeAvatarUrl(activeUser.avatar_url)}
                   alt=""
                   className="w-16 h-16 rounded-full object-cover border border-[#2f3336] mb-2"
                 />
@@ -499,7 +497,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     className="flex items-center gap-3 p-3 hover:bg-[#16181c] rounded-xl cursor-pointer transition-colors"
                   >
                     <img
-                      src={u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                      src={getSafeAvatarUrl(u.avatar_url)}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover border border-[#2f3336]"
                     />

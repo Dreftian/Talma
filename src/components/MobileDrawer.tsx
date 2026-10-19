@@ -5,20 +5,25 @@ import {
   Users,
   Bookmark,
   List,
-  Radio,
-  Coins,
-  ChevronDown,
-  ChevronUp,
   Settings,
   HelpCircle,
   Moon,
   Sun,
   LogOut,
-  ShieldCheck,
   CheckCircle2,
+  UserPlus,
+  Mic2,
+  Sparkles,
+  Rocket,
+  Lock,
+  BadgeCheck,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { getStoredTheme, setAppTheme, AppTheme } from '../lib/theme';
+import { getSafeAvatarUrl } from '../lib/avatar';
+
+/** La API puede devolver el flag de cuenta protegida aunque el tipo global no lo declare. */
+type ProfileWithPrivacy = UserProfile & { is_protected?: boolean };
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -28,6 +33,10 @@ interface MobileDrawerProps {
   onSelectProfile: (username: string) => void;
   onOpenAuth: () => void;
   onLogout?: () => void;
+  onOpenArticles?: () => void;
+  onOpenCommunities?: () => void;
+  onOpenFollowRequests?: () => void;
+  onOpenAi?: () => void;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -38,9 +47,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onSelectProfile,
   onOpenAuth,
   onLogout,
+  onOpenArticles,
+  onOpenCommunities,
+  onOpenFollowRequests,
+  onOpenAi,
 }) => {
-  const [configOpen, setConfigOpen] = useState(true);
   const [currentTheme, setCurrentTheme] = useState<AppTheme>(getStoredTheme());
+  const isProtected = Boolean((currentUser as ProfileWithPrivacy).is_protected);
 
   if (!isOpen) return null;
 
@@ -66,7 +79,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           {/* Top row: Avatar & Close button */}
           <div className="flex items-center justify-between mb-3">
             <img
-              src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+              src={getSafeAvatarUrl(currentUser.avatar_url)}
               alt={currentUser.display_name}
               className="w-10 h-10 rounded-full object-cover border border-[#2f3336] cursor-pointer"
               onClick={() => {
@@ -97,6 +110,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               {currentUser.is_verified && (
                 <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
               )}
+              {isProtected && (
+                <Lock className="w-4 h-4 text-[#e7e9ea] shrink-0" aria-label="Cuenta protegida" />
+              )}
             </div>
             <span className="text-sm text-[#71767b]">@{currentUser.username}</span>
           </div>
@@ -113,137 +129,161 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
           <div className="h-px bg-[#2f3336] my-4" />
 
-          {/* Navigation Items - Exact X mobile style (matches 4.jpeg & 5.jpeg) */}
-          <nav className="flex flex-col gap-1">
+          {/* Navigation Items — orden exacto de las refs 4.jpeg & 5.jpeg */}
+          <nav className="flex flex-col gap-0.5">
             {/* 1. Perfil */}
             <button
               onClick={() => {
                 onSelectProfile(currentUser.username);
                 onClose();
               }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
             >
-              <User className="w-6 h-6 text-[#e7e9ea]" />
+              <User className="w-5 h-5 text-[#e7e9ea]" />
               <span>Perfil</span>
             </button>
 
-            {/* 2. Comunidades */}
-            <button
-              onClick={() => {
-                onSelectTab('extalmita');
-                onClose();
-              }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
-            >
-              <Users className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Comunidades</span>
-            </button>
-
-            {/* 3. Guardados */}
-            <button
-              onClick={() => {
-                onSelectTab('bookmarks');
-                onClose();
-              }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
-            >
-              <Bookmark className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Guardados</span>
-            </button>
-
-            {/* 4. Listas */}
-            <button
-              onClick={() => {
-                onSelectTab('home');
-                onClose();
-              }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
-            >
-              <List className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Listas</span>
-            </button>
-
-            {/* 5. Espacios */}
-            <button
-              onClick={() => {
-                onSelectTab('home');
-                onClose();
-              }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
-            >
-              <Radio className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Espacios</span>
-            </button>
-
-            {/* 6. Monetización */}
+            {/* 2. Premium + píldora "50% de descuento" */}
             <button
               onClick={() => {
                 onSelectTab('settings');
                 onClose();
               }}
-              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
             >
-              <Coins className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Monetización</span>
+              <BadgeCheck className="w-5 h-5 text-[#e7e9ea]" />
+              <span className="flex items-center gap-2 min-w-0">
+                <span>Premium</span>
+                <span className="shrink-0 bg-[#1d9bf0] text-white text-[11px] font-bold leading-none rounded-full px-2 py-1">
+                  50% de descuento
+                </span>
+              </span>
+            </button>
+
+            {/* 3. Comunidades */}
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenCommunities) onOpenCommunities();
+                else onSelectTab('extalmita');
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <Users className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Comunidades</span>
+            </button>
+
+            {/* 4. Guardados */}
+            <button
+              onClick={() => {
+                onSelectTab('bookmarks');
+                onClose();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <Bookmark className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Guardados</span>
+            </button>
+
+            {/* 5. Listas */}
+            <button
+              onClick={() => {
+                onSelectTab('home');
+                onClose();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <List className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Listas</span>
+            </button>
+
+            {/* 6. Espacios (ref 4.jpeg / 5.jpeg) */}
+            <button
+              onClick={() => onClose()}
+              title="Espacios"
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <Mic2 className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Espacios</span>
+            </button>
+
+            {/* 7. Solicitudes de seguimiento */}
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenFollowRequests) onOpenFollowRequests();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <UserPlus className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Solicitudes de seguimiento</span>
+            </button>
+
+            {/* 8. Estudio para creadores (abre el estudio de artículos/borradores) */}
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenArticles) onOpenArticles();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[17px] font-bold cursor-pointer text-left"
+            >
+              <Rocket className="w-5 h-5 text-[#e7e9ea]" />
+              <span>Estudio para creadores</span>
             </button>
           </nav>
 
           <div className="h-px bg-[#2f3336] my-3" />
 
-          {/* Configuración y soporte Accordion (matches 4.jpeg & 5.jpeg) */}
-          <div className="flex flex-col">
+          {/* Bloque de iconos pequeños: icono 18px + label 15px normal (ref 5.jpeg) */}
+          <div className="flex flex-col gap-1">
             <button
-              onClick={() => setConfigOpen(!configOpen)}
-              className="flex items-center justify-between py-3 px-2 text-[15px] font-bold text-white hover:bg-white/[0.04] rounded-xl transition-colors cursor-pointer"
+              onClick={() => {
+                onClose();
+                onOpenAi?.();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
             >
-              <span>Configuración y soporte</span>
-              {configOpen ? (
-                <ChevronUp className="w-5 h-5 text-[#71767b]" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-[#71767b]" />
-              )}
+              <Sparkles className="w-[18px] h-[18px] text-[#71767b] shrink-0" />
+              <span>Abrir Talma AI</span>
             </button>
 
-            {configOpen && (
-              <div className="flex flex-col pl-2 gap-1 animate-fadeIn">
-                <button
-                  onClick={() => {
-                    onSelectTab('settings');
-                    onClose();
-                  }}
-                  className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
-                >
-                  <Settings className="w-5 h-5 text-[#71767b]" />
-                  <span>Configuración y privacidad</span>
-                </button>
+            <button
+              onClick={() => {
+                onSelectTab('settings');
+                onClose();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
+            >
+              <Settings className="w-[18px] h-[18px] text-[#71767b] shrink-0" />
+              <span>Configuración y privacidad</span>
+            </button>
 
-                <button
-                  onClick={() => {
-                    onSelectTab('settings');
-                    onClose();
-                  }}
-                  className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
-                >
-                  <HelpCircle className="w-5 h-5 text-[#71767b]" />
-                  <span>Centro de Ayuda</span>
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => {
+                onSelectTab('settings');
+                onClose();
+              }}
+              className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
+            >
+              <HelpCircle className="w-[18px] h-[18px] text-[#71767b] shrink-0" />
+              <span>Centro de Ayuda</span>
+            </button>
           </div>
         </div>
 
-        {/* Bottom Drawer Actions (Theme icon on bottom left matching 4.jpeg) */}
-        <div className="flex items-center justify-between pt-4 border-t border-[#2f3336]">
+        {/* Bloque inferior: icono 18px + label 15px normal (ref 5.jpeg) */}
+        <div className="flex flex-col gap-1 pt-3 border-t border-[#2f3336]">
           <button
             onClick={cycleTheme}
             title={`Tema actual: ${currentTheme}`}
-            className="p-2.5 rounded-full hover:bg-white/10 text-[#71767b] hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
           >
             {currentTheme === 'light' ? (
-              <Sun className="w-5 h-5 text-amber-400" />
+              <Sun className="w-[18px] h-[18px] text-amber-400 shrink-0" />
             ) : (
-              <Moon className="w-5 h-5 text-white" />
+              <Moon className="w-[18px] h-[18px] text-[#e7e9ea] shrink-0" />
             )}
+            <span>{currentTheme === 'light' ? 'Tema claro' : currentTheme === 'dim' ? 'Tema tenue' : 'Tema oscuro'}</span>
           </button>
 
           <button
@@ -252,9 +292,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               if (onLogout) onLogout();
               else onOpenAuth();
             }}
-            className="flex items-center gap-2 py-1.5 px-3 rounded-full text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+            className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] font-normal text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer text-left"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-[18px] h-[18px] shrink-0" />
             <span>Cerrar sesión</span>
           </button>
         </div>

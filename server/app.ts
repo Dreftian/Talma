@@ -429,7 +429,7 @@ api.post('/auth/signin', async (c) => {
       adminProfile = await db.updateProfile('admin', {
         username: 'admin',
         display_name: 'Admin',
-        avatar_url: `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/logo-talma.png`,
+        avatar_url: '/avatar-plane.png',
         banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
         bio: 'Cuenta Oficial de Administración de Talma 🚀 Plataforma social en tiempo real sobre Supabase. 100% gratuita y sin suscripciones VIP.',
         location: 'Global',

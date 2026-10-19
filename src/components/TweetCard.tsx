@@ -8,6 +8,7 @@ import {
   Share,
   MoreHorizontal,
   CheckCircle2,
+  Ghost,
   Trash2,
   EyeOff,
   Link as LinkIcon,
@@ -17,6 +18,7 @@ import { formatRelativeTime, formatNumber } from '../lib/utils';
 import { toggleLike, toggleRepost, toggleBookmark, votePoll } from '../lib/api';
 import { MediaPreview } from './MediaPreview';
 import { PollView } from './PollView';
+import { getSafeAvatarUrl } from '../lib/avatar';
 
 interface TweetCardProps {
   post: Post;
@@ -26,6 +28,8 @@ interface TweetCardProps {
   onDelete?: (postId: string) => void;
   onHide?: (postId: string) => void;
   onReply?: (post: Post) => void;
+  /** Optional context line shown above the post, e.g. "Tú reposteaste" (refs 9.jpeg). */
+  repostContext?: string;
 }
 
 export const TweetCard: React.FC<TweetCardProps> = ({
@@ -36,6 +40,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
   onDelete,
   onHide,
   onReply,
+  repostContext,
 }) => {
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [isLiked, setIsLiked] = useState(post.is_liked ?? false);
@@ -146,8 +151,15 @@ export const TweetCard: React.FC<TweetCardProps> = ({
   return (
     <article
       onClick={() => onPostClick?.(post)}
-      className="flex gap-3 px-4 py-3.5 border-b border-[#2f3336] hover:bg-[#080808] transition-colors duration-150 cursor-pointer select-none relative"
+      className="border-b border-[#2f3336] hover:bg-[#080808] transition-colors duration-150 cursor-pointer select-none relative"
     >
+      {repostContext && (
+        <div className="flex items-center gap-2 pl-[52px] pr-4 pt-2 text-[13px] font-bold text-[#71767b]">
+          <Repeat2 className="w-4 h-4" />
+          <span>{repostContext}</span>
+        </div>
+      )}
+      <div className="flex gap-3 px-4 py-3.5">
       {/* Author Avatar */}
       <div className="shrink-0">
         {post.is_anonymous ? (
@@ -156,7 +168,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
           </div>
         ) : (
           <img
-            src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+            src={getSafeAvatarUrl(post.author.avatar_url)}
             alt={post.author.display_name}
             onClick={(e) => {
               e.stopPropagation();
@@ -228,7 +240,17 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             </span>
           </div>
 
-          {/* More options button & dropdown */}
+          {/* Ghost (AI) + more options, mirroring the reference post header */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              title="Preguntar a Talma AI"
+              className="p-1.5 text-[#71767b] hover:text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+            >
+              <Ghost className="w-4 h-4" />
+            </button>
           <div className="relative">
             <button
               onClick={(e) => {
@@ -281,6 +303,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 )}
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -390,6 +413,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             ¡Enlace copiado!
           </div>
         )}
+        </div>
       </div>
     </article>
   );

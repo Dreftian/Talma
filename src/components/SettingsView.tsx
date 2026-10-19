@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Phone,
   Mail,
+  Megaphone,
+  Database,
   Globe,
   Bot,
   Smile,
@@ -58,6 +60,7 @@ type SettingsSection =
   | 'apps_sessions'
   | 'delegate'
   | 'privacy_security'
+  | 'data_sharing'
   | 'audience_tags'
   | 'mute_block'
   | 'notifications'
@@ -83,6 +86,32 @@ const COUNTRIES = [
   'Reino Unido', 'República Dominicana', 'Uruguay', 'Venezuela',
 ];
 
+interface ToggleSwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+}
+
+/** Switch estilo X: pista redondeada (#2f3336 apagado / #1d9bf0 encendido) y perilla blanca. */
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, label }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-label={label}
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer ${
+      checked ? 'bg-[#1d9bf0]' : 'bg-[#2f3336]'
+    }`}
+  >
+    <span
+      className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+      }`}
+    />
+  </button>
+);
+
 export const SettingsView: React.FC<SettingsViewProps> = ({
   currentUser,
   onBack,
@@ -97,10 +126,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Form states
   const [newUsername, setNewUsername] = useState(currentUser.username);
   const [phoneNumber, setPhoneNumber] = useState('+51903053478');
+  const [phoneFlowStep, setPhoneFlowStep] = useState<'main' | 'new_input' | 'sms_verify'>('main');
+  const [newPhoneInput, setNewPhoneInput] = useState('+51 987 654 321');
+  const [smsDigits, setSmsDigits] = useState(['', '', '', '', '', '']);
+  const [demoCode, setDemoCode] = useState('748291');
+  const [smsError, setSmsError] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('Perú');
   const [profileLabel, setProfileLabel] = useState('Ninguno');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [additionalPasswordEnabled, setAdditionalPasswordEnabled] = useState(false);
+  const [identityVerificationEnabled, setIdentityVerificationEnabled] = useState(false);
+  const [adsPersonalizationEnabled, setAdsPersonalizationEnabled] = useState(true);
+  const [dataPersonalizationEnabled, setDataPersonalizationEnabled] = useState(true);
   const [qualityFilterEnabled, setQualityFilterEnabled] = useState(true);
   const [pushNotifsEnabled, setPushNotifsEnabled] = useState(true);
   const [emailNotifsEnabled, setEmailNotifsEnabled] = useState(false);
@@ -481,55 +518,205 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* 5. TELÉFONO (matches WhatsApp Image 2026-10-18 at 5.58.26 qwe.jpeg) */}
+      {/* 5. TELÉFONO (matches WhatsApp Image 2026-10-18 at 5.58.26 qwe.jpeg & 12312354.jpeg) */}
       {/* ========================================================= */}
       {currentSection === 'phone_edit' && (
-        <div className="flex flex-col">
-          <div className="sticky top-0 bg-black/90 backdrop-blur-md z-20 border-b border-[#2f3336] flex items-center gap-6 px-4 h-[53px]">
-            <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </button>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-[19px] text-white leading-tight">Teléfono</span>
-              <span className="text-xs text-[#71767b]">@{currentUser.username}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col divide-y divide-[#2f3336]/40">
-            <div className="flex items-start gap-4 p-4">
-              <Phone className="w-5 h-5 text-[#71767b] shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="text-xs text-[#71767b]">Teléfono</span>
-                <p className="text-[15px] font-bold text-white">{phoneNumber}</p>
+        <div className="flex flex-col flex-1">
+          {phoneFlowStep === 'main' ? (
+            <>
+              <div className="sticky top-0 bg-black/90 backdrop-blur-md z-20 border-b border-[#2f3336] flex items-center gap-6 px-4 h-[53px]">
+                <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="flex flex-col">
+                  <span className="font-extrabold text-[19px] text-white leading-tight">Teléfono</span>
+                  <span className="text-xs text-[#71767b]">@{currentUser.username}</span>
+                </div>
               </div>
-            </div>
 
-            <div
-              onClick={() => {
-                const updated = prompt('Introduce el nuevo número de teléfono:', phoneNumber);
-                if (updated) {
-                  setPhoneNumber(updated);
-                  showToast('Número de teléfono actualizado');
-                }
-              }}
-              className="flex items-center gap-4 p-4 hover:bg-white/[0.04] cursor-pointer transition-colors"
-            >
-              <PenTool className="w-5 h-5 text-[#71767b] shrink-0" />
-              <span className="text-[15px] font-semibold text-white">Actualizar número de teléfono</span>
-            </div>
+              <div className="flex flex-col divide-y divide-[#2f3336]/40">
+                <div className="flex items-start gap-4 p-4">
+                  <Phone className="w-5 h-5 text-[#71767b] shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="text-xs text-[#71767b]">Teléfono actual</span>
+                    <p className="text-[15px] font-bold text-white">{phoneNumber || 'Sin asignar'}</p>
+                  </div>
+                </div>
 
-            <div
-              onClick={() => {
-                setPhoneNumber('');
-                showToast('Número de teléfono eliminado');
-              }}
-              className="flex items-center gap-4 p-4 hover:bg-red-500/10 cursor-pointer transition-colors"
-            >
-              <span className="text-red-500 font-semibold text-[15px] pl-9">
-                Eliminar número de teléfono
-              </span>
-            </div>
-          </div>
+                <div
+                  onClick={() => {
+                    setPhoneFlowStep('new_input');
+                    setSmsDigits(['', '', '', '', '', '']);
+                    setSmsError('');
+                  }}
+                  className="flex items-center gap-4 p-4 hover:bg-white/[0.04] cursor-pointer transition-colors"
+                >
+                  <PenTool className="w-5 h-5 text-[#71767b] shrink-0" />
+                  <span className="text-[15px] font-semibold text-white">Actualizar número de teléfono</span>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setPhoneNumber('');
+                    showToast('Número de teléfono eliminado');
+                  }}
+                  className="flex items-center gap-4 p-4 hover:bg-red-500/10 cursor-pointer transition-colors"
+                >
+                  <span className="text-red-500 font-semibold text-[15px] pl-9">
+                    Eliminar número de teléfono
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : phoneFlowStep === 'new_input' ? (
+            <>
+              {/* Step 1: Input new phone */}
+              <div className="sticky top-0 bg-black/90 backdrop-blur-md z-20 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
+                <div className="flex items-center gap-6">
+                  <button
+                    onClick={() => setPhoneFlowStep('main')}
+                    className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <span className="font-extrabold text-[19px] text-white">Actualizar teléfono</span>
+                </div>
+              </div>
+
+              <div className="p-6 flex flex-col gap-5 max-w-lg mx-auto w-full">
+                <div>
+                  <h3 className="font-bold text-xl text-white">Introduce tu nuevo número</h3>
+                  <p className="text-xs text-[#71767b] mt-1.5 leading-relaxed">
+                    Te enviaremos un código de verificación SMS para asegurarnos de que el número te pertenece.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-[#71767b] font-medium">Número de teléfono</label>
+                  <input
+                    type="tel"
+                    value={newPhoneInput}
+                    onChange={(e) => setNewPhoneInput(e.target.value)}
+                    placeholder="+51 987 654 321"
+                    className="w-full px-4 py-3 bg-[#16181c] border border-[#2f3336] rounded-xl text-white text-base focus:border-[#1d9bf0] focus:outline-hidden"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (newPhoneInput.trim().length < 6) {
+                      alert('Introduce un número de teléfono válido.');
+                      return;
+                    }
+                    const code = Math.floor(100000 + Math.random() * 900000).toString();
+                    setDemoCode(code);
+                    setPhoneFlowStep('sms_verify');
+                    setSmsDigits(['', '', '', '', '', '']);
+                    setSmsError('');
+                  }}
+                  className="w-full mt-2 py-3 bg-white hover:bg-white/90 text-black font-extrabold rounded-full transition-transform active:scale-98 cursor-pointer text-sm shadow-md"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Step 2: SMS Verification Code Screen (EXACT match with reference 12312354.jpeg) */}
+              <div className="sticky top-0 bg-black/90 backdrop-blur-md z-20 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
+                <div className="flex items-center gap-6">
+                  <button
+                    onClick={() => setPhoneFlowStep('new_input')}
+                    className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <span className="font-extrabold text-[19px] text-white">Actualizar teléfono</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col flex-1 max-w-lg mx-auto w-full px-8 pt-8 pb-6">
+                <div className="flex flex-col gap-3">
+                  <h3 className="font-extrabold text-[28px] leading-tight text-white">Te enviamos un código</h3>
+                  <p className="text-[15px] text-[#71767b] leading-normal">
+                    Introduce el código de verificación enviado a{' '}
+                    <span className="text-[#e7e9ea]">{newPhoneInput}</span>.
+                  </p>
+                </div>
+
+                {/* Código de verificación (matches 12312354.jpeg) */}
+                <div className="mt-8 flex flex-col gap-4">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={smsDigits.join('')}
+                    onChange={(e) => {
+                      setSmsDigits(e.target.value.replace(/\D/g, '').slice(0, 6).split(''));
+                      setSmsError('');
+                    }}
+                    placeholder="Introduce el código de verificación"
+                    className="w-full px-4 py-3.5 bg-black border-2 border-[#1d9bf0] rounded-md text-white text-[17px] placeholder-[#71767b] outline-none transition-colors"
+                  />
+
+                  {smsError && (
+                    <p className="text-xs text-red-500 font-semibold">{smsError}</p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = Math.floor(100000 + Math.random() * 900000).toString();
+                      setDemoCode(code);
+                      setSmsDigits([]);
+                      showToast('Nuevo código reenviado');
+                    }}
+                    className="self-start text-[15px] text-[#1d9bf0] hover:underline font-medium cursor-pointer"
+                  >
+                    ¿No recibiste un código?
+                  </button>
+
+                  {/* Ayuda de demo: permite completar el flujo sin un SMS real */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmsDigits(demoCode.split(''));
+                      setSmsError('');
+                    }}
+                    className="self-start text-[11px] text-[#71767b] hover:text-[#e7e9ea] transition-colors cursor-pointer"
+                  >
+                    💬 Código de prueba: <span className="tracking-widest">{demoCode}</span> · Rellenar
+                  </button>
+                </div>
+
+                <div className="mt-auto pt-8 flex justify-end">
+                  <button
+                    onClick={() => {
+                      const entered = smsDigits.join('');
+                      if (entered.length < 6) {
+                        setSmsError('Introduce los 6 dígitos del código.');
+                        return;
+                      }
+                      if (entered !== demoCode) {
+                        setSmsError('El código introducido no es correcto. Inténtalo de nuevo.');
+                        return;
+                      }
+
+                      // Success!
+                      setPhoneNumber(newPhoneInput);
+                      setPhoneFlowStep('main');
+                      showToast('Número de teléfono verificado y actualizado');
+                    }}
+                    disabled={smsDigits.length < 6}
+                    className="px-6 py-2.5 bg-[#333639] text-[#71767b] font-bold rounded-full text-[15px] cursor-not-allowed disabled:cursor-not-allowed transition-colors"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -709,12 +896,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </p>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-[15px] font-semibold text-white">Autenticación en dos fases</span>
-                <input
-                  type="checkbox"
-                  checked={twoFactorEnabled}
-                  onChange={(e) => setTwoFactorEnabled(e.target.checked)}
-                  className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
-                />
+                <ToggleSwitch checked={twoFactorEnabled} onChange={setTwoFactorEnabled} label="Autenticación en dos fases" />
               </div>
             </div>
 
@@ -725,9 +907,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 Carga un documento de identidad aprobado para confirmar la autenticidad de tu cuenta. Tu información solo se usará para validar tu identidad y se procesará de forma segura.{' '}
                 <span className="text-[#1d9bf0] cursor-pointer">Más información</span>
               </p>
-              <span className="text-[14px] text-[#1d9bf0] font-semibold mt-1 cursor-pointer">
-                Verificación de documento de identidad
-              </span>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-[15px] font-semibold text-white">Verificación de documento de identidad</span>
+                <ToggleSwitch
+                  checked={identityVerificationEnabled}
+                  onChange={setIdentityVerificationEnabled}
+                  label="Verificación de documento de identidad"
+                />
+              </div>
             </div>
 
             {/* Protección con contraseña adicional */}
@@ -742,11 +929,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     Se requiere una confirmación adicional de tu correo electrónico o número de teléfono para permitir restablecer la contraseña.
                   </p>
                 </div>
-                <input
-                  type="checkbox"
+                <ToggleSwitch
                   checked={additionalPasswordEnabled}
-                  onChange={(e) => setAdditionalPasswordEnabled(e.target.checked)}
-                  className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
+                  onChange={setAdditionalPasswordEnabled}
+                  label="Protección de restablecimiento de contraseña"
                 />
               </div>
             </div>
@@ -833,12 +1019,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span className="text-[#1d9bf0] cursor-pointer">Más información</span>
               </p>
             </div>
-            <input
-              type="checkbox"
-              checked={delegateInviteEnabled}
-              onChange={(e) => setDelegateInviteEnabled(e.target.checked)}
-              className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
-            />
+            <ToggleSwitch checked={delegateInviteEnabled} onChange={setDelegateInviteEnabled} label="Permitir que otros te inviten a su cuenta" />
           </div>
 
           <div className="p-4">
@@ -933,6 +1114,80 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Intercambio y personalización de datos (matches asdad.jpeg) */}
+          <div className="p-4 border-y border-[#2f3336]/40">
+            <span className="font-bold text-[16px] text-white">Intercambio y personalización de datos</span>
+          </div>
+
+          <div className="flex flex-col divide-y divide-[#2f3336]/40">
+            <div
+              onClick={() => navigateTo('data_sharing')}
+              className="flex items-start gap-4 p-4 hover:bg-white/[0.04] cursor-pointer transition-colors"
+            >
+              <Megaphone className="w-6 h-6 text-[#71767b] shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-[15px] text-white">Anuncios personalizados</h3>
+                <p className="text-xs text-[#71767b] mt-0.5">Administra cómo se usan tus datos para personalizar los anuncios que ves en Talma.</p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => navigateTo('data_sharing')}
+              className="flex items-start gap-4 p-4 hover:bg-white/[0.04] cursor-pointer transition-colors"
+            >
+              <Database className="w-6 h-6 text-[#71767b] shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-[15px] text-white">Personalización de datos</h3>
+                <p className="text-xs text-[#71767b] mt-0.5">Controla los datos que Talma usa para personalizar tu experiencia y tus recomendaciones.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 12b. INTERCAMBIO Y PERSONALIZACIÓN DE DATOS (matches asdad.jpeg) */}
+      {/* ========================================================= */}
+      {currentSection === 'data_sharing' && (
+        <div className="flex flex-col">
+          <div className="sticky top-0 bg-black/90 backdrop-blur-md z-20 border-b border-[#2f3336] flex items-center gap-6 px-4 h-[53px]">
+            <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-[19px] text-white leading-tight">Intercambio y personalización de datos</span>
+              <span className="text-xs text-[#71767b]">@{currentUser.username}</span>
+            </div>
+          </div>
+
+          <p className="p-4 text-[13px] text-[#71767b] leading-normal border-b border-[#2f3336]/40">
+            Controla cómo Talma usa tus datos para personalizar tu experiencia y los anuncios que ves.
+          </p>
+
+          <div className="flex flex-col divide-y divide-[#2f3336]/40">
+            <div className="p-4 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <span className="text-[15px] font-bold text-white block">Anuncios personalizados</span>
+                <p className="text-[13px] text-[#71767b] mt-0.5">
+                  Usa tu actividad e intereses para mostrarte anuncios más relevantes.{' '}
+                  <span className="text-[#1d9bf0] cursor-pointer">Más información</span>
+                </p>
+              </div>
+              <ToggleSwitch checked={adsPersonalizationEnabled} onChange={setAdsPersonalizationEnabled} label="Anuncios personalizados" />
+            </div>
+
+            <div className="p-4 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <span className="text-[15px] font-bold text-white block">Personalización de datos</span>
+                <p className="text-[13px] text-[#71767b] mt-0.5">
+                  Permite que Talma use los datos de tu actividad para personalizar recomendaciones y contenido.{' '}
+                  <span className="text-[#1d9bf0] cursor-pointer">Más información</span>
+                </p>
+              </div>
+              <ToggleSwitch checked={dataPersonalizationEnabled} onChange={setDataPersonalizationEnabled} label="Personalización de datos" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -1001,12 +1256,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span className="text-[#1d9bf0] cursor-pointer">Más información</span>
                 </p>
               </div>
-              <input
-                type="checkbox"
-                checked={qualityFilterEnabled}
-                onChange={(e) => setQualityFilterEnabled(e.target.checked)}
-                className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
-              />
+              <ToggleSwitch checked={qualityFilterEnabled} onChange={setQualityFilterEnabled} label="Filtro de calidad" />
             </div>
 
             <div className="p-4 hover:bg-white/[0.04] cursor-pointer">
@@ -1044,12 +1294,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <Bell className="w-5 h-5 text-[#71767b]" />
                 <span className="text-[15px] font-bold text-white">Notificaciones push</span>
               </div>
-              <input
-                type="checkbox"
-                checked={pushNotifsEnabled}
-                onChange={(e) => setPushNotifsEnabled(e.target.checked)}
-                className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
-              />
+              <ToggleSwitch checked={pushNotifsEnabled} onChange={setPushNotifsEnabled} label="Notificaciones push" />
             </div>
 
             <div className="p-4 flex items-center justify-between">
@@ -1057,12 +1302,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <Mail className="w-5 h-5 text-[#71767b]" />
                 <span className="text-[15px] font-bold text-white">Notificaciones de correo electrónico</span>
               </div>
-              <input
-                type="checkbox"
-                checked={emailNotifsEnabled}
-                onChange={(e) => setEmailNotifsEnabled(e.target.checked)}
-                className="w-5 h-5 accent-[#1d9bf0] cursor-pointer"
-              />
+              <ToggleSwitch checked={emailNotifsEnabled} onChange={setEmailNotifsEnabled} label="Notificaciones de correo electrónico" />
             </div>
           </div>
         </div>

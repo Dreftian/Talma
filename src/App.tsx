@@ -14,8 +14,11 @@ import { RegisterModal } from './components/RegisterModal';
 import { MobileDrawer } from './components/MobileDrawer';
 import { SettingsView } from './components/SettingsView';
 import { LandingView } from './components/LandingView';
+import { ArticlesModal } from './components/ArticlesModal';
+import { CommunitiesModal } from './components/CommunitiesModal';
+import { FollowRequestsModal } from './components/FollowRequestsModal';
 import { Post, UserProfile } from './types';
-import { fetchPosts, fetchMe, deletePost, hidePost } from './lib/api';
+import { fetchPosts, fetchMe, deletePost, hidePost, fetchConversations } from './lib/api';
 import {
   X,
   Home,
@@ -23,13 +26,21 @@ import {
   Bell,
   MessageCircle,
   Plus,
+  Sparkles,
 } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem('talma_current_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (!parsed.avatar_url || parsed.avatar_url.includes('logo-talma.png'))) {
+          parsed.avatar_url = '/avatar-plane.png';
+        }
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -45,8 +56,18 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showComposerModal, setShowComposerModal] = useState(false);
+  const [showArticlesModal, setShowArticlesModal] = useState(false);
+  const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
+  const [showFollowRequestsModal, setShowFollowRequestsModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
+  const [showAiSheet, setShowAiSheet] = useState(false);
+
+  // Contadores dinámicos del bottom nav (solo se pintan cuando son > 0).
+  // - Mensajes: suma de conversaciones no leídas que ya expone la API.
+  // - Notificaciones: todavía no hay contador en la API, queda en 0.
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const notificationsCount = 0;
 
   // Initial load
   useEffect(() => {
@@ -80,6 +101,26 @@ export default function App() {
       loadFeed();
     }
   }, [homeFeedTab, currentUser?.id]);
+
+  // Mantiene el badge de mensajes del bottom nav sincronizado con las conversaciones.
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+    let cancelled = false;
+    fetchConversations(currentUser.id)
+      .then((convs) => {
+        if (cancelled) return;
+        setUnreadMessagesCount(
+          convs.reduce((sum, conv) => sum + (conv.unread_count || 0), 0)
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id, currentTab]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -204,6 +245,9 @@ export default function App() {
               onProfileUpdated={(updated) => setCurrentUser(updated)}
               onDelete={handleDeletePost}
               onHide={handleHidePost}
+              onOpenChat={handleOpenChat}
+              onOpenArticles={() => setShowArticlesModal(true)}
+              onOpenAi={() => setShowAiSheet(true)}
             />
           ) : currentTab === 'messages' ? (
             <MessagesView
@@ -217,6 +261,8 @@ export default function App() {
                 setSearchFilter(q);
                 handleSelectTab('home');
               }}
+              currentUser={currentUser}
+              onOpenDrawer={() => setIsMobileDrawerOpen(true)}
             />
           ) : currentTab === 'notifications' ? (
             <NotificationsView
@@ -345,8 +391,9 @@ export default function App() {
         )}
       </div>
 
-      {/* Mobile Floating Action Button (FAB) for Compose - Exact X Mobile App Style */}
-      {currentTab !== 'messages' && currentTab !== 'settings' && (
+      {/* Mobile Floating Action Button (FAB) for Compose - Exact X Mobile App Style.
+          Se oculta al abrir el detalle de un post para no tapar el composer fijo. */}
+      {currentTab !== 'messages' && currentTab !== 'settings' && !selectedPostId && (
         <button
           onClick={() => setShowComposerModal(true)}
           className="fixed bottom-20 right-4 sm:hidden w-14 h-14 bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#1d9bf0]/50 shadow-[#1d9bf0]/40"
@@ -379,6 +426,19 @@ export default function App() {
             <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5] text-white' : ''}`} />
           </button>
 
+          {/* Centro: Talma AI (equivalente al icono Grok/destello de las refs) */}
+          <button
+            onClick={() => setShowAiSheet(true)}
+            className={`flex-1 flex justify-center py-2 transition-colors ${
+              showAiSheet ? 'text-white' : 'text-[#71767b]'
+            }`}
+            title="Talma AI"
+          >
+            <Sparkles
+              className={`w-6 h-6 ${showAiSheet ? 'stroke-[2.5] text-white' : ''}`}
+            />
+          </button>
+
           <button
             onClick={() => handleSelectTab('notifications')}
             className={`flex-1 flex justify-center py-2 relative transition-colors ${
@@ -388,9 +448,11 @@ export default function App() {
           >
             <div className="relative">
               <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5] text-white fill-white' : ''}`} />
-              <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-                2
-              </span>
+              {notificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+                  {notificationsCount > 9 ? '9+' : notificationsCount}
+                </span>
+              )}
             </div>
           </button>
 
@@ -403,12 +465,49 @@ export default function App() {
           >
             <div className="relative">
               <MessageCircle className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5] text-white fill-white' : ''}`} />
-              <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-                1
-              </span>
+              {unreadMessagesCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+                  {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                </span>
+              )}
             </div>
           </button>
         </nav>
+      )}
+
+      {/* Talma AI sheet (mobile bottom nav center icon, mirrors the Grok entry in the refs) */}
+      {showAiSheet && (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-xs"
+            onClick={() => setShowAiSheet(false)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-black border-t border-[#2f3336] rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] animate-pop-in">
+            <div className="w-9 h-1 rounded-full bg-[#2f3336] mx-auto mb-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-5 h-5 text-[#1d9bf0]" />
+              <h2 className="text-[17px] font-extrabold text-white">Talma AI</h2>
+            </div>
+            <p className="text-[13px] text-[#71767b] leading-normal mb-4">
+              Resúmenes, ideas y contexto sobre lo que está pasando en Talma.
+            </p>
+            <div className="flex flex-col gap-2">
+              {[
+                'Resume las tendencias de hoy',
+                'Explícame este post',
+                'Sugiéreme ideas para postear',
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => setShowAiSheet(false)}
+                  className="w-full text-left px-4 py-3 rounded-2xl bg-[#16181c] hover:bg-[#1d1f23] text-[15px] text-[#e7e9ea] transition-colors cursor-pointer"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Mobile Slide-Out Drawer Navigation (Triggered by mobile header avatar) */}
@@ -420,7 +519,57 @@ export default function App() {
         onSelectProfile={handleSelectProfile}
         onOpenAuth={() => setShowAuthModal(true)}
         onLogout={handleLogout}
+        onOpenArticles={() => setShowArticlesModal(true)}
+        onOpenCommunities={() => setShowCommunitiesModal(true)}
+        onOpenFollowRequests={() => setShowFollowRequestsModal(true)}
+        onOpenAi={() => setShowAiSheet(true)}
       />
+
+      {/* Articles Modal (matches 13.jpeg) */}
+      {showArticlesModal && (
+        <ArticlesModal
+          isOpen={showArticlesModal}
+          onClose={() => setShowArticlesModal(false)}
+          currentUser={currentUser}
+          onPublishArticle={(art) => {
+            handlePostCreated({
+              id: 'art_post_' + Date.now(),
+              user_id: currentUser.id,
+              author: currentUser,
+              content: `📰 Nuevo artículo publicado:\n\n**${art.title}**\n\n${art.content.slice(0, 180)}...`,
+              media: [],
+              created_at: new Date().toISOString(),
+              likes_count: 0,
+              reposts_count: 0,
+              replies_count: 0,
+              bookmarks_count: 0,
+              views_count: 1,
+              is_liked: false,
+              is_reposted: false,
+              is_bookmarked: false,
+            });
+            setShowArticlesModal(false);
+          }}
+        />
+      )}
+
+      {/* Communities Modal (matches WhatsApp Image 2026-10-18 at 5.58.26 21312PM.jpeg) */}
+      {showCommunitiesModal && (
+        <CommunitiesModal
+          isOpen={showCommunitiesModal}
+          onClose={() => setShowCommunitiesModal(false)}
+          currentUser={currentUser}
+        />
+      )}
+
+      {/* Follow Requests Modal (matches 4.jpeg & 5.jpeg) */}
+      {showFollowRequestsModal && (
+        <FollowRequestsModal
+          isOpen={showFollowRequestsModal}
+          onClose={() => setShowFollowRequestsModal(false)}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* Floating Composer Modal (Triggered by Sidebar "Postear" button or Mobile FAB) */}
       {showComposerModal && (

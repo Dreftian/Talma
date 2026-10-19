@@ -19,6 +19,7 @@ import {
 import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
 import { getStoredTheme, setAppTheme, AppTheme } from '../lib/theme';
+import { getSafeAvatarUrl } from '../lib/avatar';
 
 interface SidebarProps {
   currentTab: string;
@@ -224,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="absolute bottom-full left-0 mb-3 w-72 bg-black border border-[#2f3336] rounded-2xl shadow-2xl p-2 z-50 animate-pop-in">
             <div className="p-3 border-b border-[#2f3336] flex items-center gap-3">
               <img
-                src={currentUser.avatar_url || 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png'}
+                src={getSafeAvatarUrl(currentUser.avatar_url)}
                 alt={currentUser.display_name}
                 className="w-10 h-10 rounded-full object-cover border border-[#2f3336]"
               />
@@ -283,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <img
-              src={currentUser.avatar_url || 'https://wmrvhihrwskuzoiifaug.supabase.co/storage/v1/object/public/talma-media/logo-talma.png'}
+              src={getSafeAvatarUrl(currentUser.avatar_url)}
               alt={currentUser.display_name}
               className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#2f3336]"
             />
