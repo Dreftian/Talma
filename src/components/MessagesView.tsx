@@ -13,6 +13,7 @@ import {
   Video,
   Info,
   Smile,
+  ChevronDown,
 } from 'lucide-react';
 import { UserProfile, Conversation, DirectMessage } from '../types';
 import {
@@ -27,11 +28,13 @@ import { formatRelativeTime } from '../lib/utils';
 interface MessagesViewProps {
   currentUser: UserProfile;
   initialChatUser?: UserProfile | null;
+  onOpenDrawer?: () => void;
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
   currentUser,
   initialChatUser,
+  onOpenDrawer,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeUser, setActiveUser] = useState<UserProfile | null>(initialChatUser || null);
@@ -41,6 +44,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
   const [attachmentType, setAttachmentType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [chatFilter, setChatFilter] = useState<'all' | 'unread'>('all');
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
 
@@ -128,6 +132,17 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     }
   };
 
+  const visibleConversations = conversations.filter((conv) => {
+    if (chatFilter === 'unread' && conv.unread_count <= 0) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      conv.participant.display_name.toLowerCase().includes(q) ||
+      conv.participant.username.toLowerCase().includes(q) ||
+      (conv.last_message.content || '').toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="flex h-screen w-full select-none overflow-hidden">
       {/* Left Column: Conversations List */}
@@ -137,14 +152,38 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-[#2f3336] flex items-center justify-between">
-          <h1 className="font-extrabold text-xl text-white">Mensajes</h1>
+        <div className="px-4 h-[53px] border-b border-[#2f3336] flex items-center justify-between gap-2">
+          <button
+            onClick={onOpenDrawer}
+            className="sm:hidden shrink-0 rounded-full active:scale-95 transition-transform"
+            title="Abrir menú"
+          >
+            <img
+              src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+              alt={currentUser.display_name}
+              className="w-8 h-8 rounded-full object-cover border border-[#2f3336]"
+            />
+          </button>
+
+          <h1 className="font-extrabold text-xl text-white sm:static absolute left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto">
+            <span className="sm:hidden">Chat</span>
+            <span className="hidden sm:inline">Mensajes</span>
+          </h1>
+
           <button
             onClick={() => setShowNewChatModal(true)}
-            className="p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+            className="hidden sm:flex p-2 text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
             title="Nuevo mensaje"
           >
             <Paperclip className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setChatFilter((prev) => (prev === 'all' ? 'unread' : 'all'))}
+            className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2f3336] text-[13px] font-bold text-white"
+          >
+            {chatFilter === 'all' ? 'Todo' : 'No leídos'}
+            <ChevronDown className="w-4 h-4" />
           </button>
         </div>
 
@@ -156,8 +195,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar mensajes directos"
-              className="bg-transparent text-sm text-[#e7e9ea] outline-none w-full"
+              placeholder="Buscar"
+              className="bg-transparent text-sm text-[#e7e9ea] outline-none w-full placeholder-[#71767b]"
             />
           </div>
         </div>
@@ -175,8 +214,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 Escribir a un usuario registrado
               </button>
             </div>
+          ) : visibleConversations.length === 0 ? (
+            <div className="p-8 text-center text-[#71767b] text-sm">
+              No hay conversaciones que coincidan.
+            </div>
           ) : (
-            conversations.map((conv) => {
+            visibleConversations.map((conv) => {
               const isActive = activeUser?.id === conv.participant.id;
               return (
                 <div

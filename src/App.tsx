@@ -21,8 +21,8 @@ import {
   Home,
   Search,
   Bell,
-  Mail,
-  Feather,
+  MessageCircle,
+  Plus,
 } from 'lucide-react';
 
 export default function App() {
@@ -36,7 +36,7 @@ export default function App() {
   });
 
   const [currentTab, setCurrentTab] = useState<string>('home');
-  const [homeFeedTab, setHomeFeedTab] = useState<'for_you' | 'following'>('for_you');
+  const [homeFeedTab, setHomeFeedTab] = useState<'for_you' | 'following' | 'extalmita'>('for_you');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
@@ -206,7 +206,11 @@ export default function App() {
               onHide={handleHidePost}
             />
           ) : currentTab === 'messages' ? (
-            <MessagesView currentUser={currentUser} initialChatUser={chatWithUser} />
+            <MessagesView
+              currentUser={currentUser}
+              initialChatUser={chatWithUser}
+              onOpenDrawer={() => setIsMobileDrawerOpen(true)}
+            />
           ) : currentTab === 'explore' ? (
             <ExploreView
               onSearch={(q) => {
@@ -218,6 +222,7 @@ export default function App() {
             <NotificationsView
               currentUser={currentUser}
               onSelectProfile={handleSelectProfile}
+              onOpenDrawer={() => setIsMobileDrawerOpen(true)}
             />
           ) : currentTab === 'settings' ? (
             <SettingsView
@@ -341,68 +346,70 @@ export default function App() {
       </div>
 
       {/* Mobile Floating Action Button (FAB) for Compose - Exact X Mobile App Style */}
-      {currentTab !== 'messages' && (
+      {currentTab !== 'messages' && currentTab !== 'settings' && (
         <button
           onClick={() => setShowComposerModal(true)}
-          className="fixed bottom-18 right-4 sm:hidden bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white p-3.5 rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#1d9bf0]/50 shadow-[#1d9bf0]/40"
+          className="fixed bottom-20 right-4 sm:hidden w-14 h-14 bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white rounded-full shadow-2xl z-30 active:scale-90 transition-transform duration-150 flex items-center justify-center cursor-pointer border border-[#1d9bf0]/50 shadow-[#1d9bf0]/40"
           title="Nuevo post"
         >
-          <Feather className="w-6 h-6 stroke-[2.4]" />
+          <Plus className="w-7 h-7 stroke-[2.4]" />
         </button>
       )}
 
-      {/* Mobile Bottom Navigation Bar - Exact X Mobile App UI */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-[#2f3336] flex sm:hidden justify-around items-center h-[52px] px-2 select-none">
-        <button
-          onClick={() => handleSelectTab('home')}
-          className={`flex-1 flex justify-center py-2 relative transition-colors ${
-            currentTab === 'home' ? 'text-white' : 'text-[#71767b]'
-          }`}
-          title="Inicio"
-        >
-          <Home className={`w-6 h-6 ${currentTab === 'home' ? 'stroke-[2.5] text-white' : ''}`} />
-        </button>
+      {/* Mobile Bottom Navigation Bar - Exact X Mobile App UI (hidden in full-screen settings) */}
+      {currentTab !== 'settings' && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-[#2f3336] flex sm:hidden justify-around items-center min-h-[52px] pb-[env(safe-area-inset-bottom)] px-2 select-none">
+          <button
+            onClick={() => handleSelectTab('home')}
+            className={`flex-1 flex justify-center py-2 relative transition-colors ${
+              currentTab === 'home' ? 'text-white' : 'text-[#71767b]'
+            }`}
+            title="Inicio"
+          >
+            <Home className={`w-6 h-6 ${currentTab === 'home' ? 'stroke-[2.5] text-white fill-white' : ''}`} />
+          </button>
 
-        <button
-          onClick={() => handleSelectTab('explore')}
-          className={`flex-1 flex justify-center py-2 transition-colors ${
-            currentTab === 'explore' ? 'text-white' : 'text-[#71767b]'
-          }`}
-          title="Explorar"
-        >
-          <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5] text-white' : ''}`} />
-        </button>
+          <button
+            onClick={() => handleSelectTab('explore')}
+            className={`flex-1 flex justify-center py-2 transition-colors ${
+              currentTab === 'explore' ? 'text-white' : 'text-[#71767b]'
+            }`}
+            title="Explorar"
+          >
+            <Search className={`w-6 h-6 ${currentTab === 'explore' ? 'stroke-[2.5] text-white' : ''}`} />
+          </button>
 
-        <button
-          onClick={() => handleSelectTab('notifications')}
-          className={`flex-1 flex justify-center py-2 relative transition-colors ${
-            currentTab === 'notifications' ? 'text-white' : 'text-[#71767b]'
-          }`}
-          title="Notificaciones"
-        >
-          <div className="relative">
-            <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5] text-white' : ''}`} />
-            <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-              2
-            </span>
-          </div>
-        </button>
+          <button
+            onClick={() => handleSelectTab('notifications')}
+            className={`flex-1 flex justify-center py-2 relative transition-colors ${
+              currentTab === 'notifications' ? 'text-white' : 'text-[#71767b]'
+            }`}
+            title="Notificaciones"
+          >
+            <div className="relative">
+              <Bell className={`w-6 h-6 ${currentTab === 'notifications' ? 'stroke-[2.5] text-white fill-white' : ''}`} />
+              <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+                2
+              </span>
+            </div>
+          </button>
 
-        <button
-          onClick={() => handleSelectTab('messages')}
-          className={`flex-1 flex justify-center py-2 relative transition-colors ${
-            currentTab === 'messages' ? 'text-white' : 'text-[#71767b]'
-          }`}
-          title="Mensajes"
-        >
-          <div className="relative">
-            <Mail className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5] text-white' : ''}`} />
-            <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
-              1
-            </span>
-          </div>
-        </button>
-      </nav>
+          <button
+            onClick={() => handleSelectTab('messages')}
+            className={`flex-1 flex justify-center py-2 relative transition-colors ${
+              currentTab === 'messages' ? 'text-white' : 'text-[#71767b]'
+            }`}
+            title="Mensajes"
+          >
+            <div className="relative">
+              <MessageCircle className={`w-6 h-6 ${currentTab === 'messages' ? 'stroke-[2.5] text-white fill-white' : ''}`} />
+              <span className="absolute -top-1 -right-1.5 bg-[#1d9bf0] text-white text-[10px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">
+                1
+              </span>
+            </div>
+          </button>
+        </nav>
+      )}
 
       {/* Mobile Slide-Out Drawer Navigation (Triggered by mobile header avatar) */}
       <MobileDrawer

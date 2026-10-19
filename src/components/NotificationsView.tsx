@@ -5,10 +5,13 @@ import { UserProfile } from '../types';
 interface NotificationsViewProps {
   currentUser: UserProfile;
   onSelectProfile: (username: string) => void;
+  onOpenDrawer?: () => void;
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
   currentUser,
+  onSelectProfile,
+  onOpenDrawer,
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'mentions'>('all');
 
@@ -37,7 +40,23 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
     <div className="flex flex-col min-h-screen pb-16">
       {/* Header */}
       <div className="sticky top-0 bg-black/80 backdrop-blur-md z-30 border-b border-[#2f3336] flex items-center justify-between px-4 h-[53px]">
-        <h1 className="font-extrabold text-xl text-white">Notificaciones</h1>
+        {/* Mobile avatar (opens the slide-out drawer, X app style) */}
+        <button
+          onClick={() => (onOpenDrawer ? onOpenDrawer() : onSelectProfile(currentUser.username))}
+          className="sm:hidden shrink-0 rounded-full active:scale-95 transition-transform"
+          title="Abrir menú"
+        >
+          <img
+            src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+            alt={currentUser.display_name}
+            className="w-8 h-8 rounded-full object-cover border border-[#2f3336]"
+          />
+        </button>
+
+        <h1 className="font-extrabold text-xl text-white sm:static absolute left-1/2 -translate-x-1/2 sm:translate-x-0">
+          Notificaciones
+        </h1>
+
         <button className="p-2 -mr-2 text-[#71767b] hover:text-white hover:bg-[#181818] rounded-full transition-colors cursor-pointer">
           <Settings className="w-5 h-5" />
         </button>
@@ -46,8 +65,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
       <div className="flex border-b border-[#2f3336]">
         {[
           { id: 'all', label: 'Todas' },
-          { id: 'verified', label: 'Verificadas' },
           { id: 'mentions', label: 'Menciones' },
+          { id: 'verified', label: 'Verificado' },
         ].map((tab) => (
           <button
             key={tab.id}
