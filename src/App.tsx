@@ -382,8 +382,13 @@ export default function App() {
                     <span className="text-sm">Cargando publicaciones...</span>
                   </div>
                 ) : displayPosts.length === 0 ? (
-                  <div className="p-12 text-center text-[#71767b]">
-                    No hay publicaciones disponibles en esta sección.
+                  <div className="px-8 py-20 text-center max-w-sm mx-auto flex flex-col items-center justify-center">
+                    <h2 className="text-[28px] sm:text-[31px] font-extrabold text-white tracking-tight leading-tight mb-2">
+                      ¡Te damos la bienvenida a tu Cronología!
+                    </h2>
+                    <p className="text-[15px] text-[#71767b] leading-relaxed">
+                      Este es el mejor lugar para ver lo que está pasando en tu mundo. Comienza a postear para compartir tus ideas con la comunidad.
+                    </p>
                   </div>
                 ) : (
                   displayPosts.map((post) => (

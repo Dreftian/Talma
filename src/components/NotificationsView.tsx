@@ -126,36 +126,8 @@ const normalizeNotification = (
   preview: raw.preview || raw.post?.content || raw.text,
 });
 
-// Datos sembrados localmente (no hay endpoint de notificaciones todavía):
-// las dos filas replican exactamente 2.jpeg (post reciente + follow).
-const SEEDED_NOTIFICATIONS: RawNotification[] = [
-  {
-    id: 'notif_post_mafegjordano',
-    type: 'post',
-    actor: {
-      name: 'Mafegjordano',
-      handle: 'mafegjordano',
-      avatarUrl:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
-      isVerified: true,
-    },
-    time: '1 s',
-    preview:
-      'Probando el nuevo feed de Talma desde el móvil. La línea de tiempo ya carga rapidísimo y el composer quedó impecable.',
-  },
-  {
-    id: 'notif_follow_hermixy',
-    type: 'follow',
-    actor: {
-      name: 'hermixy†',
-      handle: 'hermixy',
-      avatarUrl:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
-      isVerified: false,
-    },
-    time: '1 s',
-  },
-];
+// Notificaciones limpias para estado inicial / app nueva
+const SEEDED_NOTIFICATIONS: RawNotification[] = [];
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
   currentUser,
@@ -288,8 +260,17 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         })}
 
         {visibleNotifications.length === 0 && (
-          <div className="px-8 py-16 text-center text-[15px] text-[#71767b]">
-            Todavía no hay notificaciones en esta pestaña.
+          <div className="px-8 py-20 text-center max-w-sm mx-auto flex flex-col items-center justify-center">
+            <h2 className="text-[28px] sm:text-[31px] font-extrabold text-white tracking-tight leading-tight mb-2">
+              Nada que ver aquí... todavía
+            </h2>
+            <p className="text-[15px] text-[#71767b] leading-relaxed">
+              {activeTab === 'mentions'
+                ? 'Cuando alguien te mencione en una publicación o respuesta, la verás aquí.'
+                : activeTab === 'verified'
+                ? 'Las notificaciones de personas verificadas aparecerán aquí.'
+                : 'De "Me gusta" y reposts a respuestas y mucho más, aquí es donde verás toda la actividad de tus publicaciones y tu cuenta.'}
+            </p>
           </div>
         )}
       </div>
