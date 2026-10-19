@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
             {activeTab === 'for_you' && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
           </span>
           {activeTab === 'for_you' && (
-            <div className="absolute bottom-0 h-[4px] w-14 bg-[#1d9bf0] rounded-full" />
+            <div className="absolute bottom-0 h-[4px] w-14 bg-white rounded-full" />
           )}
         </button>
 
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
             {activeTab === 'following' && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
           </span>
           {activeTab === 'following' && (
-            <div className="absolute bottom-0 h-[4px] w-16 bg-[#1d9bf0] rounded-full" />
+            <div className="absolute bottom-0 h-[4px] w-16 bg-white rounded-full" />
           )}
         </button>
 
@@ -152,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
             {activeTab === 'extalmita' && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
           </span>
           {activeTab === 'extalmita' && (
-            <div className="absolute bottom-0 h-[4px] w-20 bg-[#1d9bf0] rounded-full" />
+            <div className="absolute bottom-0 h-[4px] w-20 bg-white rounded-full" />
           )}
         </button>
 

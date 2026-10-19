@@ -328,9 +328,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             </button>
           </div>
         )}
-        {/* Audience Selector pill */}
+        {/* Audience Selector pill (X style: sleek borderless interactive badge) */}
         {!compact && (
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#1d9bf0] border border-[#2f3336] rounded-full px-3 py-1 w-fit mb-2 cursor-pointer hover:bg-[#1d9bf0]/10 transition-colors">
+          <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#1d9bf0] hover:bg-[#1d9bf0]/10 px-3 py-0.5 rounded-full w-fit mb-2 cursor-pointer transition-colors select-none">
             <Globe className="w-3.5 h-3.5" />
             <span>Cualquiera puede responder</span>
           </div>

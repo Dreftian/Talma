@@ -232,7 +232,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
               {tab.label}
             </span>
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-14 bg-[#1d9bf0] rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] w-14 bg-white rounded-full" />
             )}
           </button>
         ))}
