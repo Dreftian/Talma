@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   CheckCircle2,
   Trash2,
+  EyeOff,
   Link as LinkIcon,
 } from 'lucide-react';
 import { Post, UserProfile } from '../types';
@@ -23,6 +24,7 @@ interface TweetCardProps {
   onPostClick?: (post: Post) => void;
   onSelectProfile?: (username: string) => void;
   onDelete?: (postId: string) => void;
+  onHide?: (postId: string) => void;
   onReply?: (post: Post) => void;
 }
 
@@ -32,6 +34,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
   onPostClick,
   onSelectProfile,
   onDelete,
+  onHide,
   onReply,
 }) => {
   const [likesCount, setLikesCount] = useState(post.likes_count);
@@ -247,22 +250,33 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                     setShowMenu(false);
                     handleShare({ stopPropagation: () => {} } as any);
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[#e7e9ea] hover:bg-[#16181c] flex items-center gap-2.5"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e7e9ea] hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
                 >
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className="w-4 h-4 text-[#71767b]" />
                   <span>Copiar enlace</span>
                 </button>
 
-                {post.user_id === currentUser.id && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onHide?.(post.id);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e7e9ea] hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
+                >
+                  <EyeOff className="w-4 h-4 text-[#71767b]" />
+                  <span>Ocultar post</span>
+                </button>
+
+                {(post.user_id === currentUser.id || currentUser.username === 'admin' || currentUser.id === 'admin') && (
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       onDelete?.(post.id);
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-[#16181c] flex items-center gap-2.5"
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
-                    <span>Eliminar post</span>
+                    <span>Eliminar post{currentUser.username === 'admin' && post.user_id !== currentUser.id ? ' (Admin)' : ''}</span>
                   </button>
                 )}
               </div>

@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle2, Heart, Repeat2, Bookmark, Share, MessageSquare, BarChart2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Heart,
+  Repeat2,
+  Bookmark,
+  Share,
+  MessageSquare,
+  BarChart2,
+  MoreHorizontal,
+  Trash2,
+  EyeOff,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Smile,
+} from 'lucide-react';
 import { Post, UserProfile } from '../types';
 import { formatFullDate, formatNumber } from '../lib/utils';
-import { fetchPostById, toggleLike, toggleRepost, toggleBookmark, votePoll } from '../lib/api';
+import { fetchPostById, toggleLike, toggleRepost, toggleBookmark, votePoll, toggleFollow } from '../lib/api';
 import { MediaPreview } from './MediaPreview';
 import { PollView } from './PollView';
 import { TweetComposer } from './TweetComposer';
@@ -12,6 +27,8 @@ interface TweetDetailModalProps {
   currentUser: UserProfile;
   onBack: () => void;
   onSelectProfile: (username: string) => void;
+  onDelete?: (postId: string) => void;
+  onHide?: (postId: string) => void;
 }
 
 export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
@@ -19,6 +36,8 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
   currentUser,
   onBack,
   onSelectProfile,
+  onDelete,
+  onHide,
 }) => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +46,8 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
   const [isReposted, setIsReposted] = useState(false);
   const [repostsCount, setRepostsCount] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   const loadPost = async () => {
     try {
@@ -48,6 +69,16 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
   useEffect(() => {
     loadPost();
   }, [postId]);
+
+  const handleToggleFollow = async () => {
+    if (!post || post.is_anonymous) return;
+    try {
+      const res = await toggleFollow(post.author.id, currentUser.id);
+      setIsFollowing(res.following);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleLike = async () => {
     if (!post) return;
@@ -120,52 +151,121 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
       {/* Main post body */}
       <div className="p-4 border-b border-[#2f3336]">
         {/* Author info */}
-        <div className="flex items-center gap-3">
-          {post.is_anonymous ? (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border border-[#2f3336] flex items-center justify-center text-xl shadow-inner select-none shrink-0">
-              🎭
-            </div>
-          ) : (
-            <img
-              src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
-              alt={post.author.display_name}
-              onClick={() => onSelectProfile(post.author.username)}
-              className="w-12 h-12 rounded-full object-cover border border-[#2f3336] cursor-pointer hover:opacity-90 shrink-0"
-            />
-          )}
-          <div className="flex flex-col leading-tight">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {post.is_anonymous ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[16px] text-white">
-                    {post.anonymous_name || 'Anónimo'}
-                  </span>
-                  <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold">
-                    🎭 Modo Anónimo
-                  </span>
-                </div>
-                <span className="text-[14px] text-[#71767b]">@anonimo</span>
-              </>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1c1f23] to-[#0d0f12] border border-[#2f3336] flex items-center justify-center text-xl shadow-inner select-none shrink-0">
+                🎭
+              </div>
             ) : (
-              <>
-                <div className="flex items-center gap-1">
+              <img
+                src={post.author.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                alt={post.author.display_name}
+                onClick={() => onSelectProfile(post.author.username)}
+                className="w-12 h-12 rounded-full object-cover border border-[#2f3336] cursor-pointer hover:opacity-90 shrink-0"
+              />
+            )}
+            <div className="flex flex-col leading-tight">
+              {post.is_anonymous ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[16px] text-white">
+                      {post.anonymous_name || 'Anónimo'}
+                    </span>
+                    <span className="text-[11px] bg-[#1d9bf0]/15 text-[#1d9bf0] border border-[#1d9bf0]/30 px-2 py-0.5 rounded-full font-bold">
+                      🎭 Modo Anónimo
+                    </span>
+                  </div>
+                  <span className="text-[14px] text-[#71767b]">@anonimo</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span
+                      onClick={() => onSelectProfile(post.author.username)}
+                      className="font-bold text-[16px] text-white hover:underline cursor-pointer"
+                    >
+                      {post.author.display_name}
+                    </span>
+                    {post.author.is_verified && (
+                      <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
+                    )}
+                  </div>
                   <span
                     onClick={() => onSelectProfile(post.author.username)}
-                    className="font-bold text-[16px] text-white hover:underline cursor-pointer"
+                    className="text-[14px] text-[#71767b] hover:underline cursor-pointer"
                   >
-                    {post.author.display_name}
+                    @{post.author.username}
                   </span>
-                  {post.author.is_verified && (
-                    <CheckCircle2 className="w-4 h-4 text-[#1d9bf0] fill-[#1d9bf0] stroke-black shrink-0" />
-                  )}
-                </div>
-                <span
-                  onClick={() => onSelectProfile(post.author.username)}
-                  className="text-[14px] text-[#71767b] hover:underline cursor-pointer"
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Follow and Options */}
+          <div className="flex items-center gap-2 relative">
+            {!post.is_anonymous && post.author.id !== currentUser.id && (
+              <button
+                onClick={handleToggleFollow}
+                className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all cursor-pointer ${
+                  isFollowing
+                    ? 'border border-[#536471] text-white hover:border-red-600 hover:text-red-600'
+                    : 'bg-white text-black hover:bg-white/90'
+                }`}
+              >
+                {isFollowing ? 'Siguiendo' : 'Seguir'}
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 text-[#71767b] hover:text-[#1d9bf0] hover:bg-[#1d9bf0]/10 rounded-full transition-colors cursor-pointer"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+
+            {showMenu && (
+              <div
+                className="absolute right-0 top-full mt-1 w-48 bg-black border border-[#2f3336] rounded-2xl shadow-2xl py-1.5 z-40 animate-pop-in"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigator.clipboard.writeText(window.location.href);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e7e9ea] hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
                 >
-                  @{post.author.username}
-                </span>
-              </>
+                  <LinkIcon className="w-4 h-4 text-[#71767b]" />
+                  <span>Copiar enlace</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onHide?.(post.id);
+                    onBack();
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e7e9ea] hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
+                >
+                  <EyeOff className="w-4 h-4 text-[#71767b]" />
+                  <span>Ocultar post</span>
+                </button>
+
+                {(post.user_id === currentUser.id || currentUser.username === 'admin' || currentUser.id === 'admin') && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDelete?.(post.id);
+                      onBack();
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-[#16181c] flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Eliminar post{currentUser.username === 'admin' && post.user_id !== currentUser.id ? ' (Admin)' : ''}</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

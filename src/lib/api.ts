@@ -52,6 +52,15 @@ export async function deletePost(id: string, userId: string): Promise<boolean> {
   return res.ok;
 }
 
+export async function hidePost(id: string, userId: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/api/posts/${id}/hide`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+  return res.ok;
+}
+
 export async function toggleLike(postId: string, userId: string): Promise<{ liked: boolean; count: number }> {
   const res = await fetch(`${API_BASE}/api/posts/${postId}/like`, {
     method: 'POST',

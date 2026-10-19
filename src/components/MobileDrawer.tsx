@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   User,
+  Users,
   Bookmark,
-  Bell,
-  Mail,
-  Search,
+  List,
+  Radio,
+  Coins,
+  ChevronDown,
+  ChevronUp,
   Settings,
+  HelpCircle,
+  Moon,
+  Sun,
   LogOut,
   ShieldCheck,
   CheckCircle2,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { getStoredTheme, setAppTheme, AppTheme } from '../lib/theme';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -32,7 +39,17 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onOpenAuth,
   onLogout,
 }) => {
+  const [configOpen, setConfigOpen] = useState(true);
+  const [currentTheme, setCurrentTheme] = useState<AppTheme>(getStoredTheme());
+
   if (!isOpen) return null;
+
+  const cycleTheme = () => {
+    const nextTheme: AppTheme =
+      currentTheme === 'dark' ? 'dim' : currentTheme === 'dim' ? 'light' : 'dark';
+    setCurrentTheme(nextTheme);
+    setAppTheme(nextTheme);
+  };
 
   return (
     <div className="fixed inset-0 z-50 sm:hidden">
@@ -42,7 +59,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         onClick={onClose}
       />
 
-      {/* Slide-out drawer menu */}
+      {/* Slide-out drawer menu (matches 4.jpeg & 5.jpeg) */}
       <div className="relative w-[300px] max-w-[85vw] h-full bg-black border-r border-[#2f3336] flex flex-col justify-between p-5 z-50 overflow-y-auto animate-slide-right select-none shadow-2xl">
         {/* Top: Header with User Details */}
         <div className="flex flex-col">
@@ -51,7 +68,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             <img
               src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
               alt={currentUser.display_name}
-              className="w-12 h-12 rounded-full object-cover border border-[#2f3336]"
+              className="w-10 h-10 rounded-full object-cover border border-[#2f3336] cursor-pointer"
               onClick={() => {
                 onSelectProfile(currentUser.username);
                 onClose();
@@ -59,7 +76,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             />
             <button
               onClick={onClose}
-              className="p-2 text-[#71767b] hover:text-white rounded-full hover:bg-[#181818] transition-colors"
+              className="p-2 text-[#71767b] hover:text-white rounded-full hover:bg-[#181818] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -96,72 +113,138 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
           <div className="h-px bg-[#2f3336] my-4" />
 
-          {/* Navigation Items - Exact X mobile style */}
+          {/* Navigation Items - Exact X mobile style (matches 4.jpeg & 5.jpeg) */}
           <nav className="flex flex-col gap-1">
+            {/* 1. Perfil */}
             <button
               onClick={() => {
                 onSelectProfile(currentUser.username);
                 onClose();
               }}
-              className="flex items-center gap-4 py-3 px-2 rounded-xl text-white hover:bg-[#181818] transition-colors text-lg font-bold"
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
             >
               <User className="w-6 h-6 text-[#e7e9ea]" />
               <span>Perfil</span>
             </button>
 
+            {/* 2. Comunidades */}
+            <button
+              onClick={() => {
+                onSelectTab('extalmita');
+                onClose();
+              }}
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
+            >
+              <Users className="w-6 h-6 text-[#e7e9ea]" />
+              <span>Comunidades</span>
+            </button>
+
+            {/* 3. Guardados */}
             <button
               onClick={() => {
                 onSelectTab('bookmarks');
                 onClose();
               }}
-              className="flex items-center gap-4 py-3 px-2 rounded-xl text-white hover:bg-[#181818] transition-colors text-lg font-bold"
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
             >
               <Bookmark className="w-6 h-6 text-[#e7e9ea]" />
               <span>Guardados</span>
             </button>
 
+            {/* 4. Listas */}
             <button
               onClick={() => {
-                onSelectTab('explore');
+                onSelectTab('home');
                 onClose();
               }}
-              className="flex items-center gap-4 py-3 px-2 rounded-xl text-white hover:bg-[#181818] transition-colors text-lg font-bold"
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
             >
-              <Search className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Explorar</span>
+              <List className="w-6 h-6 text-[#e7e9ea]" />
+              <span>Listas</span>
             </button>
 
+            {/* 5. Espacios */}
             <button
               onClick={() => {
-                onSelectTab('notifications');
+                onSelectTab('home');
                 onClose();
               }}
-              className="flex items-center gap-4 py-3 px-2 rounded-xl text-white hover:bg-[#181818] transition-colors text-lg font-bold"
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
             >
-              <Bell className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Notificaciones</span>
+              <Radio className="w-6 h-6 text-[#e7e9ea]" />
+              <span>Espacios</span>
             </button>
 
+            {/* 6. Monetización */}
             <button
               onClick={() => {
-                onSelectTab('messages');
+                onSelectTab('settings');
                 onClose();
               }}
-              className="flex items-center gap-4 py-3 px-2 rounded-xl text-white hover:bg-[#181818] transition-colors text-lg font-bold"
+              className="flex items-center gap-5 py-3 px-2 rounded-xl text-white hover:bg-white/[0.04] transition-colors text-[19px] font-extrabold cursor-pointer text-left"
             >
-              <Mail className="w-6 h-6 text-[#e7e9ea]" />
-              <span>Mensajes</span>
+              <Coins className="w-6 h-6 text-[#e7e9ea]" />
+              <span>Monetización</span>
             </button>
           </nav>
+
+          <div className="h-px bg-[#2f3336] my-3" />
+
+          {/* Configuración y soporte Accordion (matches 4.jpeg & 5.jpeg) */}
+          <div className="flex flex-col">
+            <button
+              onClick={() => setConfigOpen(!configOpen)}
+              className="flex items-center justify-between py-3 px-2 text-[15px] font-bold text-white hover:bg-white/[0.04] rounded-xl transition-colors cursor-pointer"
+            >
+              <span>Configuración y soporte</span>
+              {configOpen ? (
+                <ChevronUp className="w-5 h-5 text-[#71767b]" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-[#71767b]" />
+              )}
+            </button>
+
+            {configOpen && (
+              <div className="flex flex-col pl-2 gap-1 animate-fadeIn">
+                <button
+                  onClick={() => {
+                    onSelectTab('settings');
+                    onClose();
+                  }}
+                  className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
+                >
+                  <Settings className="w-5 h-5 text-[#71767b]" />
+                  <span>Configuración y privacidad</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onSelectTab('settings');
+                    onClose();
+                  }}
+                  className="flex items-center gap-4 py-2.5 px-2 rounded-xl text-[15px] text-[#e7e9ea] hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
+                >
+                  <HelpCircle className="w-5 h-5 text-[#71767b]" />
+                  <span>Centro de Ayuda</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Bottom Drawer Actions */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-[#2f3336]">
-          {/* Status pill */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#1d9bf0]/10 border border-[#1d9bf0]/30 rounded-xl text-xs text-[#1d9bf0] font-semibold">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Cuenta Verificada</span>
-          </div>
+        {/* Bottom Drawer Actions (Theme icon on bottom left matching 4.jpeg) */}
+        <div className="flex items-center justify-between pt-4 border-t border-[#2f3336]">
+          <button
+            onClick={cycleTheme}
+            title={`Tema actual: ${currentTheme}`}
+            className="p-2.5 rounded-full hover:bg-white/10 text-[#71767b] hover:text-white transition-colors cursor-pointer"
+          >
+            {currentTheme === 'light' ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5 text-white" />
+            )}
+          </button>
 
           <button
             onClick={() => {
@@ -169,15 +252,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               if (onLogout) onLogout();
               else onOpenAuth();
             }}
-            className="flex items-center gap-3 py-2.5 px-2 rounded-xl text-red-400 hover:bg-[#181818] transition-colors text-base font-semibold cursor-pointer"
+            className="flex items-center gap-2 py-1.5 px-3 rounded-full text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             <span>Cerrar sesión</span>
           </button>
-
-          <span className="text-[11px] text-[#71767b] px-2 pt-1">
-            Talma Social
-          </span>
         </div>
       </div>
     </div>

@@ -12,9 +12,10 @@ import { NotificationsView } from './components/NotificationsView';
 import { AuthModal } from './components/AuthModal';
 import { RegisterModal } from './components/RegisterModal';
 import { MobileDrawer } from './components/MobileDrawer';
+import { SettingsView } from './components/SettingsView';
 import { LandingView } from './components/LandingView';
 import { Post, UserProfile } from './types';
-import { fetchPosts, fetchMe, deletePost } from './lib/api';
+import { fetchPosts, fetchMe, deletePost, hidePost } from './lib/api';
 import {
   X,
   Home,
@@ -105,6 +106,19 @@ export default function App() {
     }
   };
 
+  const handleHidePost = async (postId: string) => {
+    if (!currentUser) return;
+    try {
+      await hidePost(postId, currentUser.id);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      if (selectedPostId === postId) {
+        setSelectedPostId(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSelectTab = (tab: string) => {
     setCurrentTab(tab);
     setSelectedPostId(null);
@@ -177,6 +191,8 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setSelectedPostId(null)}
               onSelectProfile={handleSelectProfile}
+              onDelete={handleDeletePost}
+              onHide={handleHidePost}
             />
           ) : currentTab === 'profile' ? (
             <ProfileView
@@ -186,6 +202,8 @@ export default function App() {
               onPostClick={(p) => setSelectedPostId(p.id)}
               onSelectProfile={handleSelectProfile}
               onProfileUpdated={(updated) => setCurrentUser(updated)}
+              onDelete={handleDeletePost}
+              onHide={handleHidePost}
             />
           ) : currentTab === 'messages' ? (
             <MessagesView currentUser={currentUser} initialChatUser={chatWithUser} />
@@ -200,6 +218,13 @@ export default function App() {
             <NotificationsView
               currentUser={currentUser}
               onSelectProfile={handleSelectProfile}
+            />
+          ) : currentTab === 'settings' ? (
+            <SettingsView
+              currentUser={currentUser}
+              onBack={() => handleSelectTab('home')}
+              onLogout={handleLogout}
+              onProfileUpdated={(updated) => setCurrentUser(updated)}
             />
           ) : currentTab === 'bookmarks' ? (
             <div className="flex flex-col min-h-screen">
@@ -233,6 +258,7 @@ export default function App() {
                         onPostClick={(p) => setSelectedPostId(p.id)}
                         onSelectProfile={handleSelectProfile}
                         onDelete={handleDeletePost}
+                        onHide={handleHidePost}
                       />
                     ))
                 )}
@@ -291,6 +317,7 @@ export default function App() {
                       onPostClick={(p) => setSelectedPostId(p.id)}
                       onSelectProfile={handleSelectProfile}
                       onDelete={handleDeletePost}
+                      onHide={handleHidePost}
                       onReply={(p) => setSelectedPostId(p.id)}
                     />
                   ))

@@ -275,6 +275,14 @@ api.delete('/posts/:id', async (c) => {
   return c.json({ success: true });
 });
 
+api.post('/posts/:id/hide', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const userId = body.userId || c.req.query('userId') || 'admin';
+  const success = await db.hidePost(id, userId);
+  return c.json({ success: true });
+});
+
 api.post('/posts/:id/like', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));

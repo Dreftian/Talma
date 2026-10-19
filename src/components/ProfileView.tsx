@@ -20,6 +20,8 @@ interface ProfileViewProps {
   onPostClick: (post: Post) => void;
   onSelectProfile: (username: string) => void;
   onProfileUpdated: (updated: UserProfile) => void;
+  onDelete?: (postId: string) => void;
+  onHide?: (postId: string) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -29,6 +31,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onPostClick,
   onSelectProfile,
   onProfileUpdated,
+  onDelete,
+  onHide,
 }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -259,8 +263,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Posts list */}
       <div className="flex flex-col">
         {posts.length === 0 ? (
-          <div className="p-12 text-center text-[#71767b]">
-            @{profile.username} aún no ha publicado nada en esta sección.
+          <div className="flex flex-col items-center justify-center p-12 text-center max-w-sm mx-auto">
+            <h3 className="text-[26px] font-extrabold text-white leading-tight mb-2">
+              {isMe ? 'Aún no tienes publicaciones' : `@${profile.username} no ha publicado nada`}
+            </h3>
+            <p className="text-[15px] text-[#71767b]">
+              {isMe
+                ? 'Cuando publiques fotos, videos, audios o textos, aparecerán aquí.'
+                : 'Las publicaciones compartidas se mostrarán aquí cuando estén disponibles.'}
+            </p>
           </div>
         ) : (
           posts.map((post) => (
@@ -270,6 +281,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               currentUser={currentUser}
               onPostClick={onPostClick}
               onSelectProfile={onSelectProfile}
+              onDelete={onDelete}
+              onHide={onHide}
             />
           ))
         )}

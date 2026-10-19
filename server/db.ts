@@ -83,6 +83,7 @@ interface DatabaseSchema {
   likes: { user_id: string; post_id: string; created_at: string }[];
   reposts: { user_id: string; post_id: string; created_at: string }[];
   bookmarks: { user_id: string; post_id: string; created_at: string }[];
+  hidden_posts?: { user_id: string; post_id: string; hidden_at: string }[];
   follows: { follower_id: string; following_id: string; created_at: string }[];
   messages: MessageItem[];
 }
@@ -156,6 +157,7 @@ const INITIAL_DB: DatabaseSchema = {
   likes: [],
   reposts: [],
   bookmarks: [],
+  hidden_posts: [],
   follows: [],
   messages: [],
 };
@@ -397,8 +399,15 @@ export const db = {
   // POSTS
   getPosts: async (currentUserId?: string): Promise<any[]> => {
     const state = readDb();
+    const hiddenSet = new Set(
+      (state.hidden_posts || [])
+        .filter((h) => h.user_id === currentUserId)
+        .map((h) => h.post_id)
+    );
+    const visiblePosts = state.posts.filter((p) => !hiddenSet.has(p.id));
+
     // Return posts with author profile and user reaction states
-    const postsWithDetails = state.posts.map((post) => {
+    const postsWithDetails = visiblePosts.map((post) => {
       const realAuthor = state.profiles.find((p) => p.id === post.user_id) || {
         id: post.user_id,
         username: 'unknown',
@@ -620,12 +629,33 @@ export const db = {
 
   deletePost: async (postId: string, userId: string): Promise<boolean> => {
     const state = readDb();
-    const index = state.posts.findIndex((p) => p.id === postId && p.user_id === userId);
+    const isAdmin = userId === 'admin' || userId === 'user-admin';
+    const index = state.posts.findIndex((p) => p.id === postId && (isAdmin || p.user_id === userId));
     if (index === -1) return false;
     state.posts.splice(index, 1);
+    if (state.hidden_posts) {
+      state.hidden_posts = state.hidden_posts.filter((h) => h.post_id !== postId);
+    }
+    state.likes = state.likes.filter((l) => l.post_id !== postId);
+    state.reposts = state.reposts.filter((r) => r.post_id !== postId);
+    state.bookmarks = state.bookmarks.filter((b) => b.post_id !== postId);
     writeDb(state);
     if (supabaseDbAvailable) {
-      await supabaseAdmin.from('posts').delete().eq('id', postId).eq('user_id', userId);
+      if (isAdmin) {
+        await supabaseAdmin.from('posts').delete().eq('id', postId);
+      } else {
+        await supabaseAdmin.from('posts').delete().eq('id', postId).eq('user_id', userId);
+      }
+    }
+    return true;
+  },
+
+  hidePost: async (postId: string, userId: string): Promise<boolean> => {
+    const state = readDb();
+    if (!state.hidden_posts) state.hidden_posts = [];
+    if (!state.hidden_posts.some((h) => h.user_id === userId && h.post_id === postId)) {
+      state.hidden_posts.push({ user_id: userId, post_id: postId, hidden_at: new Date().toISOString() });
+      writeDb(state);
     }
     return true;
   },
