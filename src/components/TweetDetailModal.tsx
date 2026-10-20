@@ -109,7 +109,7 @@ export const TweetDetailModal: React.FC<TweetDetailModalProps> = ({
   const handleToggleFollow = async () => {
     if (!post || post.is_anonymous) return;
     try {
-      const res = await toggleFollow(post.author.id, currentUser.id);
+      const res = await toggleFollow(currentUser.id, post.author.id);
       setIsFollowing(res.following);
     } catch (err) {
       console.error(err);

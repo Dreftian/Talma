@@ -24,6 +24,7 @@ export interface UserProfile {
   is_verified: boolean;
   followers_count: number;
   following_count: number;
+  is_following?: boolean;
   joined_at: string;
 }
 
@@ -211,6 +212,38 @@ function mergeRemoteSnapshot(local: DatabaseSchema | null, remote: DatabaseSchem
     }
   }
 
+  // Preserva los perfiles locales que el remoto todavía no conoce
+  if (local && !seededFromInitial && Array.isArray(local.profiles)) {
+    merged.profiles = Array.isArray(merged.profiles) ? merged.profiles : [];
+    const remoteProfileIds = new Set(merged.profiles.map((p) => p.id));
+    for (const profile of local.profiles) {
+      if (!remoteProfileIds.has(profile.id)) {
+        merged.profiles.push(profile);
+      }
+    }
+  }
+
+  // Preserva los follows locales que el remoto todavía no conoce
+  if (local && !seededFromInitial && Array.isArray(local.follows)) {
+    merged.follows = Array.isArray(merged.follows) ? merged.follows : [];
+    const followKeys = new Set(merged.follows.map((f) => `${f.follower_id}:${f.following_id}`));
+    for (const follow of local.follows) {
+      const key = `${follow.follower_id}:${follow.following_id}`;
+      if (!followKeys.has(key)) {
+        merged.follows.push(follow);
+        followKeys.add(key);
+      }
+    }
+  }
+
+  // Asegura que las cuentas base (admin y extalmita) existan siempre
+  merged.profiles = Array.isArray(merged.profiles) ? merged.profiles : [];
+  for (const baseProfile of INITIAL_DB.profiles) {
+    if (!merged.profiles.some((p) => p.id === baseProfile.id)) {
+      merged.profiles.push({ ...baseProfile });
+    }
+  }
+
   // Reconstruye los contadores de interacción a partir de las tablas de relaciones
   // (así un like/repost/bookmark eliminado no queda contado para siempre).
   merged.likes = Array.isArray(merged.likes) ? merged.likes.filter((l) => !tombstones.has(l.post_id)) : [];
@@ -218,6 +251,20 @@ function mergeRemoteSnapshot(local: DatabaseSchema | null, remote: DatabaseSchem
   merged.bookmarks = Array.isArray(merged.bookmarks) ? merged.bookmarks.filter((b) => !tombstones.has(b.post_id)) : [];
   if (Array.isArray(merged.hidden_posts)) {
     merged.hidden_posts = merged.hidden_posts.filter((h) => !tombstones.has(h.post_id));
+  }
+  merged.follows = Array.isArray(merged.follows) ? merged.follows : [];
+
+  // Reconcilia contadores canónicos de followers y following a partir de la tabla follows
+  const followerCountMap = new Map<string, number>();
+  const followingCountMap = new Map<string, number>();
+  for (const f of merged.follows) {
+    followingCountMap.set(f.follower_id, (followingCountMap.get(f.follower_id) || 0) + 1);
+    followerCountMap.set(f.following_id, (followerCountMap.get(f.following_id) || 0) + 1);
+  }
+  for (const p of merged.profiles) {
+    const computedFollowers = followerCountMap.get(p.id) || 0;
+    p.followers_count = p.id === 'extalmita' ? Math.max(142, computedFollowers) : computedFollowers;
+    p.following_count = followingCountMap.get(p.id) || 0;
   }
 
   // Si el remoto trae un post que localmente ya estaba borrado, la tombstone gana.
@@ -334,6 +381,12 @@ function readDb(): DatabaseSchema {
       const parsed = JSON.parse(data);
       if (parsed.profiles && parsed.profiles.some((p: any) => p.id === 'admin')) {
         if (!Array.isArray(parsed.deleted_posts)) parsed.deleted_posts = [];
+        if (!Array.isArray(parsed.follows)) parsed.follows = [];
+        for (const baseProfile of INITIAL_DB.profiles) {
+          if (!parsed.profiles.some((p: any) => p.id === baseProfile.id)) {
+            parsed.profiles.push({ ...baseProfile });
+          }
+        }
         memoryDb = parsed;
         syncFromCloud().catch(() => {});
         return memoryDb!;
@@ -399,44 +452,63 @@ export const db = {
   isSupabaseAvailable: () => supabaseDbAvailable,
 
   // PROFILES (Sanitizados contra filtración de información privilegiada)
-  getProfiles: async (): Promise<UserProfile[]> => {
+  getProfiles: async (currentUserId?: string): Promise<UserProfile[]> => {
     let list: UserProfile[] = [];
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*');
       if (data && data.length > 0) list = data;
     }
+    const state = readDb();
     if (list.length === 0) {
-      const state = readDb();
       list = state.profiles;
     }
-    return list.map((p) => sanitizeProfile(p, false));
+    const followedSet = currentUserId
+      ? new Set(state.follows.filter((f) => f.follower_id === currentUserId).map((f) => f.following_id))
+      : null;
+    return list.map((p) => {
+      const sanitized = sanitizeProfile(p, false);
+      if (followedSet) {
+        sanitized.is_following = followedSet.has(p.id);
+      }
+      return sanitized;
+    });
   },
 
-  getProfileById: async (id: string, includePrivate = false): Promise<UserProfile | null> => {
+  getProfileById: async (id: string, includePrivate = false, currentUserId?: string): Promise<UserProfile | null> => {
     let profile: UserProfile | null = null;
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', id).single();
       if (data) profile = data;
     }
+    const state = readDb();
     if (!profile) {
-      const state = readDb();
-      profile = state.profiles.find((p) => p.id === id) || null;
+      profile = state.profiles.find((p) => p.id === id || p.username.toLowerCase() === id.toLowerCase()) || null;
     }
-    return sanitizeProfile(profile, includePrivate);
+    if (!profile) return null;
+    const sanitized = sanitizeProfile(profile, includePrivate);
+    if (currentUserId && currentUserId !== profile.id) {
+      sanitized.is_following = state.follows.some((f) => f.follower_id === currentUserId && f.following_id === profile.id);
+    }
+    return sanitized;
   },
 
-  getProfileByUsername: async (username: string): Promise<UserProfile | null> => {
+  getProfileByUsername: async (username: string, currentUserId?: string): Promise<UserProfile | null> => {
     const cleanUsername = username.replace('@', '').toLowerCase();
     let profile: UserProfile | null = null;
     if (supabaseDbAvailable) {
       const { data } = await supabaseAdmin.from('profiles').select('*').ilike('username', cleanUsername).single();
       if (data) profile = data;
     }
+    const state = readDb();
     if (!profile) {
-      const state = readDb();
-      profile = state.profiles.find((p) => p.username.toLowerCase() === cleanUsername) || null;
+      profile = state.profiles.find((p) => p.username.toLowerCase() === cleanUsername || p.id === cleanUsername) || null;
     }
-    return sanitizeProfile(profile, false);
+    if (!profile) return null;
+    const sanitized = sanitizeProfile(profile, false);
+    if (currentUserId && currentUserId !== profile.id) {
+      sanitized.is_following = state.follows.some((f) => f.follower_id === currentUserId && f.following_id === profile.id);
+    }
+    return sanitized;
   },
 
   updateProfile: async (id: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
@@ -476,9 +548,18 @@ export const db = {
 
   getAllUsers: async (currentUserId?: string): Promise<UserProfile[]> => {
     const state = readDb();
+    const followedSet = currentUserId
+      ? new Set(state.follows.filter((f) => f.follower_id === currentUserId).map((f) => f.following_id))
+      : null;
     return state.profiles
       .filter((p) => !currentUserId || p.id !== currentUserId)
-      .map((p) => sanitizeProfile(p, false));
+      .map((p) => {
+        const sanitized = sanitizeProfile(p, false);
+        if (followedSet) {
+          sanitized.is_following = followedSet.has(p.id);
+        }
+        return sanitized;
+      });
   },
 
   /** Uso estrictamente interno para autenticación segura en el servidor */
@@ -558,6 +639,9 @@ export const db = {
     );
     const tombstoneSet = new Set(tombstonesOf(state));
     const visiblePosts = state.posts.filter((p) => !hiddenSet.has(p.id) && !tombstoneSet.has(p.id));
+    const followedAuthors = currentUserId
+      ? new Set(state.follows.filter((f) => f.follower_id === currentUserId).map((f) => f.following_id))
+      : null;
 
     // Return posts with author profile and user reaction states
     const postsWithDetails = visiblePosts.map((post) => {
@@ -597,9 +681,14 @@ export const db = {
         pollWithUserVote.user_voted_option = pollWithUserVote.voters[currentUserId] || null;
       }
 
+      const authorWithFollow = {
+        ...author,
+        is_following: Boolean(currentUserId && currentUserId !== author.id && followedAuthors?.has(author.id)),
+      };
+
       return {
         ...post,
-        author,
+        author: authorWithFollow,
         poll: pollWithUserVote,
         is_liked,
         is_reposted,
@@ -671,9 +760,17 @@ export const db = {
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+    const authorWithFollow = {
+      ...author,
+      is_following: Boolean(
+        currentUserId && currentUserId !== author.id &&
+        state.follows.some((f) => f.follower_id === currentUserId && f.following_id === author.id)
+      ),
+    };
+
     return sanitizePost({
       ...post,
-      author: sanitizeProfile(author, false),
+      author: sanitizeProfile(authorWithFollow, false),
       is_liked,
       is_reposted,
       is_bookmarked,
@@ -1020,31 +1117,100 @@ export const db = {
   // FOLLOWS
   toggleFollow: async (followerId: string, followingId: string): Promise<{ following: boolean }> => {
     const state = readDb();
-    const existingIndex = state.follows.findIndex(
-      (f) => f.follower_id === followerId && f.following_id === followingId
+    const follower = state.profiles.find(
+      (p) => p.id === followerId || p.username.toLowerCase() === followerId.toLowerCase()
+    );
+    const following = state.profiles.find(
+      (p) => p.id === followingId || p.username.toLowerCase() === followingId.toLowerCase()
     );
 
-    const follower = state.profiles.find((p) => p.id === followerId);
-    const following = state.profiles.find((p) => p.id === followingId);
+    const actualFollowerId = follower ? follower.id : followerId;
+    const actualFollowingId = following ? following.id : followingId;
+
+    if (actualFollowerId === actualFollowingId) {
+      return { following: false };
+    }
+
+    const existingIndex = state.follows.findIndex(
+      (f) => f.follower_id === actualFollowerId && f.following_id === actualFollowingId
+    );
 
     let isFollowing = false;
     if (existingIndex !== -1) {
       state.follows.splice(existingIndex, 1);
-      if (follower) follower.following_count = Math.max(0, follower.following_count - 1);
-      if (following) following.followers_count = Math.max(0, following.followers_count - 1);
       isFollowing = false;
     } else {
       state.follows.push({
-        follower_id: followerId,
-        following_id: followingId,
+        follower_id: actualFollowerId,
+        following_id: actualFollowingId,
         created_at: new Date().toISOString(),
       });
-      if (follower) follower.following_count += 1;
-      if (following) following.followers_count += 1;
       isFollowing = true;
+    }
+
+    if (follower) {
+      follower.following_count = state.follows.filter((f) => f.follower_id === actualFollowerId).length;
+    }
+    if (following) {
+      const computedFollowers = state.follows.filter((f) => f.following_id === actualFollowingId).length;
+      following.followers_count = following.id === 'extalmita' ? Math.max(142, computedFollowers) : computedFollowers;
     }
 
     writeDb(state);
     return { following: isFollowing };
+  },
+
+  getFollowers: async (userId: string, currentUserId?: string): Promise<UserProfile[]> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    const targetId = user ? user.id : userId;
+    const followerIds = state.follows.filter((f) => f.following_id === targetId).map((f) => f.follower_id);
+    const followedSet = currentUserId
+      ? new Set(state.follows.filter((f) => f.follower_id === currentUserId).map((f) => f.following_id))
+      : null;
+
+    return followerIds
+      .map((id) => state.profiles.find((p) => p.id === id))
+      .filter((p): p is UserProfile => Boolean(p))
+      .map((p) => {
+        const sanitized = sanitizeProfile(p, false);
+        if (followedSet) sanitized.is_following = followedSet.has(p.id);
+        return sanitized;
+      });
+  },
+
+  getFollowing: async (userId: string, currentUserId?: string): Promise<UserProfile[]> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    const targetId = user ? user.id : userId;
+    const followingIds = state.follows.filter((f) => f.follower_id === targetId).map((f) => f.following_id);
+    const followedSet = currentUserId
+      ? new Set(state.follows.filter((f) => f.follower_id === currentUserId).map((f) => f.following_id))
+      : null;
+
+    return followingIds
+      .map((id) => state.profiles.find((p) => p.id === id))
+      .filter((p): p is UserProfile => Boolean(p))
+      .map((p) => {
+        const sanitized = sanitizeProfile(p, false);
+        if (followedSet) sanitized.is_following = followedSet.has(p.id);
+        return sanitized;
+      });
+  },
+
+  getFollowingIds: async (userId: string): Promise<string[]> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    const targetId = user ? user.id : userId;
+    return state.follows.filter((f) => f.follower_id === targetId).map((f) => f.following_id);
+  },
+
+  isFollowing: async (followerId: string, followingId: string): Promise<boolean> => {
+    const state = readDb();
+    const follower = state.profiles.find((p) => p.id === followerId || p.username.toLowerCase() === followerId.toLowerCase());
+    const following = state.profiles.find((p) => p.id === followingId || p.username.toLowerCase() === followingId.toLowerCase());
+    const fId = follower ? follower.id : followerId;
+    const fgId = following ? following.id : followingId;
+    return state.follows.some((f) => f.follower_id === fId && f.following_id === fgId);
   },
 };

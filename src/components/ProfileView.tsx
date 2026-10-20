@@ -78,8 +78,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const loadData = async () => {
     try {
       setLoading(true);
-      const user = await fetchUserProfile(username);
+      const user = await fetchUserProfile(username, currentUser?.id);
       setProfile(user);
+      setIsFollowing(Boolean(user.is_following));
       const userPosts = await fetchPosts(currentUser.id, 'for_you', username);
       setPosts(userPosts);
     } catch (err) {

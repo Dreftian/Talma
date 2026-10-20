@@ -236,7 +236,13 @@ api.get('/posts', async (c) => {
 
   let posts = await db.getPosts(currentUserId);
 
-  if (tab === 'extalmita') {
+  if (tab === 'following') {
+    const followingIds = new Set(await db.getFollowingIds(currentUserId));
+    // En la pestaña Siguiendo se muestran posts de cuentas que el usuario sigue (y sus propios posts)
+    posts = posts.filter(
+      (p: any) => followingIds.has(p.user_id) || p.user_id === currentUserId
+    );
+  } else if (tab === 'extalmita') {
     posts = posts.filter(
       (p: any) =>
         p.is_extalmita ||
@@ -246,7 +252,7 @@ api.get('/posts', async (c) => {
   }
 
   if (username) {
-    const profile = await db.getProfileByUsername(username);
+    const profile = await db.getProfileByUsername(username, currentUserId);
     if (profile) {
       posts = posts.filter((p) => p.user_id === profile.id);
     }
@@ -267,7 +273,7 @@ api.get('/posts/:id', async (c) => {
 
 api.post('/posts', async (c) => {
   const body = await c.req.json();
-  const userId = body.user_id || 'admin';
+  const userId = body.user_id || body.userId || 'admin';
   const content = body.content || '';
   const media = body.media || [];
   const poll = body.poll || null;
@@ -385,7 +391,7 @@ api.get('/users/me', async (c) => {
 
 api.get('/users/recommendations', async (c) => {
   const currentUserId = c.req.query('userId') || 'admin';
-  const allProfiles = await db.getProfiles();
+  const allProfiles = await db.getProfiles(currentUserId);
   const recommendations = allProfiles
     .filter((p) => p.id !== currentUserId)
     .slice(0, 5);
@@ -394,7 +400,8 @@ api.get('/users/recommendations', async (c) => {
 
 api.get('/users/:username', async (c) => {
   const username = c.req.param('username');
-  const profile = await db.getProfileByUsername(username);
+  const currentUserId = c.req.query('userId') || c.req.query('currentUserId');
+  const profile = await db.getProfileByUsername(username, currentUserId);
   if (!profile) {
     return c.json({ error: 'Usuario no encontrado' }, 404);
   }
@@ -408,10 +415,24 @@ api.put('/users/:id', async (c) => {
   return c.json(updated);
 });
 
+api.get('/users/:id/followers', async (c) => {
+  const id = c.req.param('id');
+  const currentUserId = c.req.query('userId');
+  const followers = await db.getFollowers(id, currentUserId);
+  return c.json(followers);
+});
+
+api.get('/users/:id/following', async (c) => {
+  const id = c.req.param('id');
+  const currentUserId = c.req.query('userId');
+  const following = await db.getFollowing(id, currentUserId);
+  return c.json(following);
+});
+
 api.post('/users/:id/follow', async (c) => {
   const followingId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const followerId = body.followerId || 'admin';
+  const followerId = body.followerId || c.req.query('userId') || 'admin';
   const result = await db.toggleFollow(followerId, followingId);
   return c.json(result);
 });

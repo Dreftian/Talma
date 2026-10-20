@@ -196,9 +196,24 @@ export async function fetchMe(userId: string = 'admin'): Promise<UserProfile> {
   return res.json();
 }
 
-export async function fetchUserProfile(username: string): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}`);
+export async function fetchUserProfile(username: string, currentUserId?: string): Promise<UserProfile> {
+  const params = currentUserId ? `?userId=${encodeURIComponent(currentUserId)}` : '';
+  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}${params}`);
   if (!res.ok) throw new Error('Usuario no encontrado');
+  return res.json();
+}
+
+export async function fetchFollowers(userId: string, currentUserId?: string): Promise<UserProfile[]> {
+  const params = currentUserId ? `?userId=${encodeURIComponent(currentUserId)}` : '';
+  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}/followers${params}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchFollowing(userId: string, currentUserId?: string): Promise<UserProfile[]> {
+  const params = currentUserId ? `?userId=${encodeURIComponent(currentUserId)}` : '';
+  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}/following${params}`);
+  if (!res.ok) return [];
   return res.json();
 }
 
