@@ -448,7 +448,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div className="flex flex-col">
-              <span className="font-extrabold text-[19px] text-white leading-tight">Configuración</span>
+              <h1 className="font-extrabold text-[19px] text-white leading-tight">Configuración</h1>
               <span className="text-xs text-[#71767b]">@{currentUser.username}</span>
             </div>
           </div>
