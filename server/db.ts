@@ -26,6 +26,13 @@ export interface UserProfile {
   following_count: number;
   is_following?: boolean;
   joined_at: string;
+  phone?: string;
+  country?: string;
+  gender?: string;
+  birth_date?: string;
+  is_protected?: boolean;
+  is_deactivated?: boolean;
+  profile_label?: string;
 }
 
 export interface MediaItem {
@@ -574,6 +581,81 @@ export const db = {
           u.id === clean
       ) || null
     );
+  },
+
+  changePassword: async (userId: string, currentPass: string, newPass: string): Promise<{ success: boolean; error?: string }> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+    // Si es admin y no tenía password_hash registrado, el default es 'admin'
+    const storedHash = user.password_hash || (user.id === 'admin' || user.username === 'admin' ? 'admin' : '');
+    if (storedHash && storedHash !== currentPass) {
+      return { success: false, error: 'La contraseña actual no es correcta' };
+    }
+    if (!newPass || newPass.trim().length < 6) {
+      return { success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres' };
+    }
+
+    user.password_hash = newPass.trim();
+    writeDb(state);
+    return { success: true };
+  },
+
+  exportUserData: async (userId: string): Promise<any> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    if (!user) return null;
+
+    const userPosts = state.posts.filter((p) => p.user_id === user.id);
+    const userLikes = state.likes.filter((l) => l.user_id === user.id);
+    const userBookmarks = state.bookmarks.filter((b) => b.user_id === user.id);
+    const userFollowers = state.follows.filter((f) => f.following_id === user.id);
+    const userFollowing = state.follows.filter((f) => f.follower_id === user.id);
+
+    return {
+      version: '12.35.0-prod.01',
+      platform: 'Talma Social',
+      exported_at: new Date().toISOString(),
+      account: sanitizeProfile(user, true),
+      stats: {
+        total_posts: userPosts.length,
+        total_likes: userLikes.length,
+        total_bookmarks: userBookmarks.length,
+        followers_count: userFollowers.length,
+        following_count: userFollowing.length,
+      },
+      posts: userPosts.map((p) => ({
+        id: p.id,
+        content: p.content,
+        created_at: p.created_at,
+        likes_count: p.likes_count,
+        reposts_count: p.reposts_count,
+        replies_count: p.replies_count,
+        media: p.media,
+        poll: p.poll,
+      })),
+      activity: {
+        registration_ip: user.registration_ip || '127.0.0.1',
+        last_ip: user.last_ip || '127.0.0.1',
+        joined_at: user.joined_at,
+      },
+    };
+  },
+
+  deactivateUser: async (userId: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const state = readDb();
+    const user = state.profiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase());
+    if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+    const storedHash = user.password_hash || (user.id === 'admin' || user.username === 'admin' ? 'admin' : '');
+    if (storedHash && storedHash !== pass) {
+      return { success: false, error: 'Contraseña incorrecta' };
+    }
+
+    user.is_deactivated = true;
+    writeDb(state);
+    return { success: true };
   },
 
   registerUser: async (data: {

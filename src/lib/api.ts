@@ -278,3 +278,38 @@ export async function sendMessage(data: {
   if (!res.ok) throw new Error('Error al enviar mensaje');
   return res.json();
 }
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
+  const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, currentPassword, newPassword }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al cambiar la contraseña');
+  }
+  return data;
+}
+
+export async function exportUserData(userId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}/export`, { cache: 'no-store' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Error al exportar datos');
+  }
+  return res.json();
+}
+
+export async function deactivateAccount(userId: string, password: string): Promise<{ success: boolean; message?: string }> {
+  const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}/deactivate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al desactivar la cuenta');
+  }
+  return data;
+}

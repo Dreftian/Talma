@@ -7,6 +7,7 @@ export interface UserProfile {
   age?: number;
   email?: string;
   registration_ip?: string;
+  last_ip?: string;
   avatar_url: string;
   banner_url: string;
   bio: string;
@@ -17,6 +18,13 @@ export interface UserProfile {
   following_count: number;
   joined_at: string;
   is_following?: boolean;
+  phone?: string;
+  country?: string;
+  gender?: string;
+  birth_date?: string;
+  is_protected?: boolean;
+  is_deactivated?: boolean;
+  profile_label?: string;
 }
 
 export interface MediaAttachment {

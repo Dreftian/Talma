@@ -605,6 +605,53 @@ api.post('/auth/signup', async (c) => {
   });
 });
 
+// CAMBIAR CONTRASEÑA
+api.post('/auth/change-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const userId = (body.user_id || body.userId || '').trim();
+  const currentPassword = (body.current_password || body.currentPassword || '').trim();
+  const newPassword = (body.new_password || body.newPassword || '').trim();
+
+  if (!userId || !currentPassword || !newPassword) {
+    return c.json({ error: 'Todos los campos son obligatorios' }, 400);
+  }
+
+  const result = await db.changePassword(userId, currentPassword, newPassword);
+  if (!result.success) {
+    return c.json({ error: result.error || 'Error al cambiar la contraseña' }, 400);
+  }
+
+  return c.json({ success: true, message: 'Contraseña cambiada con éxito' });
+});
+
+// EXPORTAR DATOS DE LA CUENTA
+api.get('/users/:id/export', async (c) => {
+  const id = c.req.param('id');
+  const exportData = await db.exportUserData(id);
+  if (!exportData) {
+    return c.json({ error: 'Usuario no encontrado' }, 404);
+  }
+  return c.json(exportData);
+});
+
+// DESACTIVAR CUENTA
+api.post('/users/:id/deactivate', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const password = (body.password || '').trim();
+
+  if (!password) {
+    return c.json({ error: 'Ingresa tu contraseña para confirmar la desactivación' }, 400);
+  }
+
+  const result = await db.deactivateUser(id, password);
+  if (!result.success) {
+    return c.json({ error: result.error || 'Error al desactivar la cuenta' }, 400);
+  }
+
+  return c.json({ success: true, message: 'Cuenta desactivada correctamente' });
+});
+
 // Mount router on both /api and / to handle all routing environments seamlessly
 app.route('/api', api);
 app.route('/', api);
