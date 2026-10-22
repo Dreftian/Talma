@@ -313,3 +313,38 @@ export async function deactivateAccount(userId: string, password: string): Promi
   }
   return data;
 }
+
+export async function socialLogin(params: {
+  provider: 'google' | 'apple';
+  email: string;
+  name?: string;
+  avatar_url?: string;
+}): Promise<{ user: UserProfile; token?: string }> {
+  const res = await fetch(`${API_BASE}/api/auth/social`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al iniciar sesión social');
+  }
+  return data;
+}
+
+export async function phoneLogin(params: {
+  phone: string;
+  code?: string;
+  name?: string;
+}): Promise<{ user: UserProfile; token?: string }> {
+  const res = await fetch(`${API_BASE}/api/auth/phone`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al iniciar sesión con teléfono');
+  }
+  return data;
+}

@@ -711,6 +711,143 @@ export const db = {
     return { user: sanitizeProfile(newProfile, true) };
   },
 
+  findOrCreateSocialUser: async (data: {
+    provider: 'google' | 'apple';
+    email: string;
+    display_name?: string;
+    avatar_url?: string;
+    client_ip?: string;
+  }): Promise<{ user: UserProfile; error?: string }> => {
+    const state = readDb();
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+
+    // Strict security check: Admin account CANNOT be accessed via social login
+    if (cleanEmail === 'admin@talma.app' || cleanEmail === 'admin') {
+      return { user: null as any, error: 'La cuenta administrativa solo puede iniciarse mediante credenciales directas de usuario y contraseña.' };
+    }
+
+    // Check if an existing profile matches this email (excluding admin)
+    let existing = state.profiles.find(
+      (p) => p.email && p.email.toLowerCase() === cleanEmail && p.id !== 'admin' && p.username.toLowerCase() !== 'admin'
+    );
+
+    if (existing) {
+      if (data.client_ip) {
+        existing.last_ip = data.client_ip;
+        writeDb(state);
+      }
+      return { user: sanitizeProfile(existing, true) };
+    }
+
+    // Generate unique username based on email or name
+    const emailPrefix = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '');
+    let baseUsername = emailPrefix || (data.provider === 'google' ? 'google_user' : 'apple_user');
+    if (baseUsername === 'admin') baseUsername = 'user_admin';
+
+    let candidate = baseUsername;
+    let counter = 1;
+    while (state.profiles.some((p) => p.username.toLowerCase() === candidate.toLowerCase())) {
+      candidate = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    const userId = `usr_${data.provider}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    const newProfile: UserProfile = {
+      id: userId,
+      username: candidate,
+      display_name: data.display_name?.trim() || (data.provider === 'google' ? 'Usuario Google' : 'Usuario Apple'),
+      email: cleanEmail,
+      avatar_url: data.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${candidate}`,
+      banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      bio: `Conectado mediante ${data.provider === 'google' ? 'Google' : 'Apple'} 🚀`,
+      location: '',
+      website: '',
+      is_verified: false,
+      followers_count: 0,
+      following_count: 0,
+      registration_ip: data.client_ip || '',
+      last_ip: data.client_ip || '',
+      posts_history: [],
+      joined_at: new Date().toISOString(),
+    };
+
+    state.profiles.push(newProfile);
+    writeDb(state);
+
+    if (supabaseDbAvailable) {
+      try {
+        await supabaseAdmin.from('profiles').insert(newProfile);
+      } catch (err) {
+        console.warn('Optional Supabase profile insert notice:', err);
+      }
+    }
+
+    return { user: sanitizeProfile(newProfile, true) };
+  },
+
+  findOrCreatePhoneUser: async (data: {
+    phone: string;
+    display_name?: string;
+    client_ip?: string;
+  }): Promise<{ user: UserProfile; error?: string }> => {
+    const state = readDb();
+    const cleanPhone = (data.phone || '').trim().replace(/[^0-9+]/g, '');
+    if (!cleanPhone || cleanPhone.length < 7) {
+      return { user: null as any, error: 'Número de teléfono inválido (mínimo 7 dígitos)' };
+    }
+
+    // Check if an existing profile matches this phone (excluding admin)
+    let existing = state.profiles.find(
+      (p) => p.phone && p.phone.replace(/[^0-9+]/g, '') === cleanPhone && p.id !== 'admin' && p.username.toLowerCase() !== 'admin'
+    );
+
+    if (existing) {
+      if (data.client_ip) {
+        existing.last_ip = data.client_ip;
+        writeDb(state);
+      }
+      return { user: sanitizeProfile(existing, true) };
+    }
+
+    // Generate unique username based on phone
+    const phoneDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const lastDigits = phoneDigits.slice(-4) || 'user';
+    const baseUsername = `tel_${lastDigits}_${Date.now().toString(36).slice(-4)}`;
+
+    const userId = `usr_phone_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    const newProfile: UserProfile = {
+      id: userId,
+      username: baseUsername,
+      display_name: data.display_name?.trim() || `Usuario (${cleanPhone.slice(-4)})`,
+      phone: cleanPhone,
+      avatar_url: `https://api.dicebear.com/7.x/identicon/svg?seed=${baseUsername}`,
+      banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      bio: 'Registrado con número de teléfono en Talma 📱',
+      location: '',
+      website: '',
+      is_verified: false,
+      followers_count: 0,
+      following_count: 0,
+      registration_ip: data.client_ip || '',
+      last_ip: data.client_ip || '',
+      posts_history: [],
+      joined_at: new Date().toISOString(),
+    };
+
+    state.profiles.push(newProfile);
+    writeDb(state);
+
+    if (supabaseDbAvailable) {
+      try {
+        await supabaseAdmin.from('profiles').insert(newProfile);
+      } catch (err) {
+        console.warn('Optional Supabase profile insert notice:', err);
+      }
+    }
+
+    return { user: sanitizeProfile(newProfile, true) };
+  },
+
   // POSTS
   getPosts: async (currentUserId?: string): Promise<any[]> => {
     const state = readDb();

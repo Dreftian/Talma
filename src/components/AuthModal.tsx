@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Loader2, Eye, EyeOff, Phone } from 'lucide-react';
 import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
+import { socialLogin, phoneLogin } from '../lib/api';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -9,14 +10,50 @@ interface AuthModalProps {
   onSwitchToRegister?: () => void;
 }
 
+type AuthStep = 'identifier' | 'password' | 'phone' | 'phone_otp' | 'google' | 'apple';
+
+const COUNTRY_CODES = [
+  { code: '+51', country: 'Perú', flag: '🇵🇪' },
+  { code: '+1', country: 'EE. UU. / Canadá', flag: '🇺🇸' },
+  { code: '+34', country: 'España', flag: '🇪🇸' },
+  { code: '+52', country: 'México', flag: '🇲🇽' },
+  { code: '+54', country: 'Argentina', flag: '🇦🇷' },
+  { code: '+57', country: 'Colombia', flag: '🇨🇴' },
+  { code: '+56', country: 'Chile', flag: '🇨🇱' },
+  { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
+  { code: '+58', country: 'Venezuela', flag: '🇻🇪' },
+  { code: '+591', country: 'Bolivia', flag: '🇧🇴' },
+];
+
+const DEFAULT_GOOGLE_ACCOUNTS = [
+  { name: 'Diego Reitz', email: 'diego.reitz@gmail.com', initial: 'D', bg: 'bg-emerald-600' },
+  { name: 'Usuario Google', email: 'usuario.google@gmail.com', initial: 'G', bg: 'bg-blue-600' },
+];
+
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, onSwitchToRegister }) => {
+  const [step, setStep] = useState<AuthStep>('identifier');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [step, setStep] = useState<'identifier' | 'password'>('identifier');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Phone Login State
+  const [selectedCountry, setSelectedCountry] = useState('+51');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [demoCode, setDemoCode] = useState('');
+
+  // Google Login State
+  const [showCustomGoogle, setShowCustomGoogle] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+
+  // Apple Login State
+  const [appleOption, setAppleOption] = useState<'share' | 'hide'>('share');
+  const [appleName, setAppleName] = useState('Usuario Apple');
+
+  // Handle standard password step submission
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) return;
@@ -58,25 +95,69 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
     }
   };
 
-  const handleSocialLogin = async (providerName: string) => {
+  // Handle Phone Send OTP
+  const handleSendPhoneOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanDigits = phoneNumber.trim().replace(/[^0-9]/g, '');
+    if (cleanDigits.length < 6) {
+      setError('Ingresa un número de teléfono válido (mínimo 6 dígitos)');
+      return;
+    }
+    setError(null);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setDemoCode(code);
+    setStep('phone_otp');
+  };
+
+  // Handle Phone Verify OTP & Login
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length !== 6) {
+      setError('Ingresa el código de 6 dígitos enviado por SMS');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
-      // Acceso directo con cuenta principal de Talma
-      const res = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: 'admin', password: 'admin' }),
+      const fullPhone = selectedCountry + ' ' + phoneNumber.trim();
+      const data = await phoneLogin({
+        phone: fullPhone,
+        code: otpCode,
+        name: 'Usuario (' + phoneNumber.trim().slice(-4) + ')',
       });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        onLoginSuccess(data.user);
-        onClose();
-      } else {
-        throw new Error('Error al conectar con ' + providerName);
-      }
+
+      onLoginSuccess(data.user);
+      onClose();
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión con ' + providerName);
+      setError(err.message || 'Error al verificar el teléfono');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Social Login (Google / Apple)
+  const handlePerformSocial = async (provider: 'google' | 'apple', email: string, name?: string) => {
+    if (!email || !email.includes('@')) {
+      setError('Ingresa un correo electrónico válido');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await socialLogin({
+        provider,
+        email: email.trim().toLowerCase(),
+        name: name?.trim() || (provider === 'google' ? 'Usuario Google' : 'Usuario Apple'),
+      });
+
+      onLoginSuccess(data.user);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión con ' + provider);
     } finally {
       setLoading(false);
     }
@@ -85,11 +166,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
   return (
     <div className="fixed inset-0 bg-[#242d34]/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
       <div className="bg-black border border-[#2f3336] rounded-2xl w-full max-w-[440px] p-6 sm:p-8 overflow-hidden shadow-2xl animate-pop-in relative">
-        {/* Header matching image m02127 */}
+        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => {
-              if (step === 'password') {
+              if (step !== 'identifier') {
                 setStep('identifier');
                 setError(null);
               } else {
@@ -103,8 +184,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
           </button>
           <div className="flex items-center gap-2.5">
             <TalmaLogo size="sm" variant="icon" />
-            <h2 className="font-extrabold text-[20px] sm:text-[22px] text-white tracking-tight leading-tight">
-              Descubre qué está pasando
+            <h2 className="font-extrabold text-[19px] sm:text-[21px] text-white tracking-tight leading-tight">
+              {step === 'identifier' && 'Descubre qué está pasando'}
+              {step === 'password' && 'Introduce tu contraseña'}
+              {step === 'phone' && 'Iniciar sesión con teléfono'}
+              {step === 'phone_otp' && 'Verificar número telefónico'}
+              {step === 'google' && 'Acceder con Google'}
+              {step === 'apple' && 'Iniciar sesión con Apple ID'}
             </h2>
           </div>
         </div>
@@ -115,14 +201,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
           </div>
         )}
 
-        {step === 'identifier' ? (
+        {/* PASO 1: IDENTIFICADOR PRINCIPAL (RAÍZ) */}
+        {step === 'identifier' && (
           <>
-            {/* Social Logins matching image m02127 */}
             <div className="flex flex-col gap-3">
               {/* Continuar con el teléfono */}
               <button
                 type="button"
-                onClick={() => handleSocialLogin('Teléfono')}
+                onClick={() => {
+                  setError(null);
+                  setStep('phone');
+                }}
                 disabled={loading}
                 className="w-full bg-white hover:bg-[#e6e6e6] text-black font-bold py-2.5 px-4 rounded-full text-[14px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50 select-none shadow-sm"
               >
@@ -133,7 +222,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
               {/* Continuar con Google */}
               <button
                 type="button"
-                onClick={() => handleSocialLogin('Google')}
+                onClick={() => {
+                  setError(null);
+                  setStep('google');
+                }}
                 disabled={loading}
                 className="w-full bg-white hover:bg-[#e6e6e6] text-black font-bold py-2.5 px-4 rounded-full text-[14px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50 select-none shadow-sm"
               >
@@ -161,7 +253,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
               {/* Continuar con Apple */}
               <button
                 type="button"
-                onClick={() => handleSocialLogin('Apple')}
+                onClick={() => {
+                  setError(null);
+                  setStep('apple');
+                }}
                 disabled={loading}
                 className="w-full bg-white hover:bg-[#e6e6e6] text-black font-bold py-2.5 px-4 rounded-full text-[14px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50 select-none shadow-sm"
               >
@@ -179,7 +274,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
               <div className="flex-1 h-px bg-[#2f3336]"></div>
             </div>
 
-            {/* Input Form matching image m02127 */}
+            {/* Input Form */}
             <form onSubmit={handleNextStep} className="flex flex-col gap-4">
               <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
                 <input
@@ -193,22 +288,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
                 />
               </div>
 
-              {/* Continuar button matching image m02127 */}
+              {/* Continuar button */}
               <button
                 type="submit"
                 disabled={!identifier.trim() || loading}
-                className={`w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ${
-                  !identifier.trim() || loading
+                className={
+                  'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                  (!identifier.trim() || loading
                     ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
-                    : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]'
-                }`}
+                    : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+                }
               >
                 <span>Continuar</span>
               </button>
             </form>
           </>
-        ) : (
-          /* Password step */
+        )}
+
+        {/* PASO 2: CONTRASEÑA DIRECTA */}
+        {step === 'password' && (
           <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4 animate-fade-in">
             <div className="border border-[#2f3336] rounded-md px-3.5 py-2.5 bg-[#16181c]/50 text-xs text-[#71767b]">
               <span>Ingresando como: </span>
@@ -237,16 +335,246 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
             <button
               type="submit"
               disabled={!password || loading}
-              className={`w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ${
-                !password || loading
+              className={
+                'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                (!password || loading
                   ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
-                  : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]'
-              }`}
+                  : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+              }
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
               <span>Iniciar sesión</span>
             </button>
           </form>
+        )}
+
+        {/* PASO 3: TELÉFONO - INGRESO DE NÚMERO */}
+        {step === 'phone' && (
+          <form onSubmit={handleSendPhoneOtp} className="flex flex-col gap-4 animate-fade-in">
+            <p className="text-xs text-[#71767b]">
+              Ingresa tu número de teléfono móvil. Te enviaremos un código SMS de verificación para acceder a tu cuenta.
+            </p>
+
+            <div className="flex gap-2">
+              <select
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value)}
+                className="w-1/3 bg-black border border-[#2f3336] focus:border-[#1d9bf0] rounded-md px-2.5 py-3 text-xs text-white outline-none cursor-pointer"
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.code} value={c.code} className="bg-[#16181c] text-white">
+                    {c.flag} {c.code} ({c.country})
+                  </option>
+                ))}
+              </select>
+
+              <div className="w-2/3 border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+                <input
+                  type="tel"
+                  required
+                  autoFocus
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="987 654 321"
+                  className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!phoneNumber.trim() || loading}
+              className={
+                'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                (!phoneNumber.trim() || loading
+                  ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
+                  : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+              }
+            >
+              <span>Enviar código por SMS</span>
+            </button>
+          </form>
+        )}
+
+        {/* PASO 4: TELÉFONO - VERIFICACIÓN OTP */}
+        {step === 'phone_otp' && (
+          <form onSubmit={handleVerifyPhoneOtp} className="flex flex-col gap-4 animate-fade-in">
+            <p className="text-xs text-[#71767b]">
+              Enviamos un código de verificación al <span className="text-white font-bold">{selectedCountry} {phoneNumber}</span>.
+            </p>
+
+            {/* Simulación en tiempo real del código SMS */}
+            <div className="p-3 bg-[#1d9bf0]/10 border border-[#1d9bf0]/30 rounded-xl text-xs text-[#1d9bf0] flex items-center justify-between">
+              <span>Código SMS recibido: <strong className="text-white text-sm tracking-widest">{demoCode}</strong></span>
+              <button
+                type="button"
+                onClick={() => setOtpCode(demoCode)}
+                className="underline hover:text-white cursor-pointer font-bold ml-2"
+              >
+                Copiar
+              </button>
+            </div>
+
+            <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+              <input
+                type="text"
+                required
+                autoFocus
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Código de 6 dígitos"
+                className="w-full bg-transparent text-white outline-none text-center font-mono tracking-widest text-lg placeholder-[#71767b]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={otpCode.length !== 6 || loading}
+              className={
+                'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                (otpCode.length !== 6 || loading
+                  ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
+                  : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+              }
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+              <span>Verificar e iniciar sesión</span>
+            </button>
+          </form>
+        )}
+
+        {/* PASO 5: SELECTOR DE CUENTA GOOGLE */}
+        {step === 'google' && (
+          <div className="flex flex-col gap-4 animate-fade-in">
+            <p className="text-xs text-[#71767b]">
+              Elige una cuenta de Google para iniciar sesión en Talma:
+            </p>
+
+            <div className="flex flex-col divide-y divide-[#2f3336]/60 border border-[#2f3336] rounded-xl overflow-hidden">
+              {DEFAULT_GOOGLE_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handlePerformSocial('google', acc.email, acc.name)}
+                  className="p-3.5 flex items-center gap-3.5 hover:bg-white/5 transition-colors text-left w-full cursor-pointer disabled:opacity-50"
+                >
+                  <div className={'w-9 h-9 rounded-full ' + acc.bg + ' text-white font-black text-sm flex items-center justify-center shrink-0'}>
+                    {acc.initial}
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-bold text-white text-sm truncate">{acc.name}</span>
+                    <span className="text-xs text-[#71767b] truncate">{acc.email}</span>
+                  </div>
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setShowCustomGoogle(!showCustomGoogle)}
+                className="p-3.5 text-xs text-[#1d9bf0] hover:bg-white/5 font-bold transition-colors text-center w-full cursor-pointer"
+              >
+                {showCustomGoogle ? 'Ocultar formulario' : 'Usar otra cuenta de Google...'}
+              </button>
+            </div>
+
+            {showCustomGoogle && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handlePerformSocial('google', customGoogleEmail, customGoogleName);
+                }}
+                className="flex flex-col gap-3 pt-1 border-t border-[#2f3336]/40"
+              >
+                <input
+                  type="text"
+                  required
+                  value={customGoogleName}
+                  onChange={(e) => setCustomGoogleName(e.target.value)}
+                  placeholder="Tu nombre completo"
+                  className="p-3 bg-black border border-[#2f3336] focus:border-[#1d9bf0] rounded-xl text-white outline-none text-xs"
+                />
+                <input
+                  type="email"
+                  required
+                  value={customGoogleEmail}
+                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                  placeholder="nombre@gmail.com"
+                  className="p-3 bg-black border border-[#2f3336] focus:border-[#1d9bf0] rounded-xl text-white outline-none text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={!customGoogleEmail.trim() || loading}
+                  className="py-2.5 bg-white text-black font-bold rounded-full text-xs hover:bg-[#e6e6e6] cursor-pointer transition-colors"
+                >
+                  Acceder con esta cuenta
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* PASO 6: INICIAR SESIÓN CON APPLE ID */}
+        {step === 'apple' && (
+          <div className="flex flex-col gap-4 animate-fade-in">
+            <p className="text-xs text-[#71767b]">
+              Talma configurará tu cuenta de forma privada mediante tu Apple ID:
+            </p>
+
+            <div className="flex flex-col gap-2.5 border border-[#2f3336] rounded-xl p-3 bg-[#16181c]/40 text-xs">
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/5">
+                <input
+                  type="radio"
+                  name="appleOption"
+                  checked={appleOption === 'share'}
+                  onChange={() => setAppleOption('share')}
+                  className="accent-white"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-white">Compartir mi correo electrónico</span>
+                  <span className="text-[11px] text-[#71767b]">usuario.apple@icloud.com</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/5">
+                <input
+                  type="radio"
+                  name="appleOption"
+                  checked={appleOption === 'hide'}
+                  onChange={() => setAppleOption('hide')}
+                  className="accent-white"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-white">Ocultar mi correo</span>
+                  <span className="text-[11px] text-[#71767b]">usuario-talma@privaterelay.appleid.com</span>
+                </div>
+              </label>
+            </div>
+
+            <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+              <input
+                type="text"
+                value={appleName}
+                onChange={(e) => setAppleName(e.target.value)}
+                placeholder="Nombre para mostrar"
+                className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                const email = appleOption === 'share' ? 'usuario.apple@icloud.com' : 'usuario-talma@privaterelay.appleid.com';
+                handlePerformSocial('apple', email, appleName);
+              }}
+              className="w-full bg-white hover:bg-[#e6e6e6] text-black font-bold py-3 rounded-full text-[15px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50 select-none shadow-sm"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+              <span>Continuar con Apple ID</span>
+            </button>
+          </div>
         )}
 
         {/* Footer text matching image m02127 */}

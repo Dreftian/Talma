@@ -605,6 +605,85 @@ api.post('/auth/signup', async (c) => {
   });
 });
 
+// AUTENTICACIÓN SOCIAL (GOOGLE / APPLE)
+api.post('/auth/social', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const rawProvider = (body.provider || 'google').toLowerCase();
+  const provider = (rawProvider === 'apple' ? 'apple' : 'google') as 'google' | 'apple';
+  const email = (body.email || '').trim().toLowerCase();
+  const displayName = (body.name || body.display_name || '').trim();
+  const avatarUrl = body.avatar_url || '';
+  const clientIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || '127.0.0.1';
+
+  if (!email || !email.includes('@')) {
+    return c.json({ error: 'Dirección de correo electrónico requerida para autenticación social' }, 400);
+  }
+
+  // Parche estricto de seguridad: Prohibido acceder o suplantar la cuenta admin mediante login social
+  if (email === 'admin' || email === 'admin@talma.app' || displayName.toLowerCase() === 'admin') {
+    return c.json({
+      error: 'La cuenta administrativa no admite inicio de sesión social. Utiliza el formulario de usuario y contraseña.',
+    }, 403);
+  }
+
+  const result = await db.findOrCreateSocialUser({
+    provider,
+    email,
+    display_name: displayName,
+    avatar_url: avatarUrl,
+    client_ip: clientIp,
+  });
+
+  if (result.error) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  return c.json({
+    user: result.user,
+    token: `social_${provider}_` + Date.now(),
+  });
+});
+
+// AUTENTICACIÓN POR TELÉFONO
+api.post('/auth/phone', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const phone = (body.phone || '').trim();
+  const code = (body.code || '').trim();
+  const displayName = (body.name || body.display_name || '').trim();
+  const clientIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || '127.0.0.1';
+
+  if (!phone) {
+    return c.json({ error: 'Número de teléfono requerido' }, 400);
+  }
+
+  // Parche estricto de seguridad: La cuenta admin no se vincula ni se accede por teléfono
+  if (phone === 'admin' || displayName.toLowerCase() === 'admin') {
+    return c.json({
+      error: 'No se permite acceso administrativo por teléfono. Inicia sesión con credenciales directas.',
+    }, 403);
+  }
+
+  // Si se envió un código OTP, validar formato de 6 dígitos
+  if (code && code.length !== 6) {
+    return c.json({ error: 'El código de verificación SMS debe contener exactamente 6 dígitos' }, 400);
+  }
+
+  const result = await db.findOrCreatePhoneUser({
+    phone,
+    display_name: displayName,
+    client_ip: clientIp,
+  });
+
+  if (result.error) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  return c.json({
+    user: result.user,
+    token: 'phone_token_' + Date.now(),
+  });
+});
+
 // CAMBIAR CONTRASEÑA
 api.post('/auth/change-password', async (c) => {
   const body = await c.req.json().catch(() => ({}));
