@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Eye, EyeOff, Phone } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Loader2, Eye, EyeOff, Phone, Trash2, Plus, User } from 'lucide-react';
 import { TalmaLogo } from './TalmaLogo';
 import { UserProfile } from '../types';
 import { socialLogin, phoneLogin } from '../lib/api';
@@ -11,6 +11,12 @@ interface AuthModalProps {
 }
 
 type AuthStep = 'identifier' | 'password' | 'phone' | 'phone_otp' | 'google' | 'apple';
+
+interface BrowserSocialAccount {
+  email: string;
+  name: string;
+  avatar_url?: string;
+}
 
 const COUNTRY_CODES = [
   { code: '+51', country: 'Perú', flag: '🇵🇪' },
@@ -25,11 +31,6 @@ const COUNTRY_CODES = [
   { code: '+591', country: 'Bolivia', flag: '🇧🇴' },
 ];
 
-const DEFAULT_GOOGLE_ACCOUNTS = [
-  { name: 'Diego Reitz', email: 'diego.reitz@gmail.com', initial: 'D', bg: 'bg-emerald-600' },
-  { name: 'Usuario Google', email: 'usuario.google@gmail.com', initial: 'G', bg: 'bg-blue-600' },
-];
-
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, onSwitchToRegister }) => {
   const [step, setStep] = useState<AuthStep>('identifier');
   const [identifier, setIdentifier] = useState('');
@@ -38,20 +39,102 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Phone Login State
+  // Phone Login State - Clean by default, detects saved phone in this specific browser if any
   const [selectedCountry, setSelectedCountry] = useState('+51');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [demoCode, setDemoCode] = useState('');
 
-  // Google Login State
-  const [showCustomGoogle, setShowCustomGoogle] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
+  // Google Browser Accounts - Only accounts that THIS person has saved on THIS browser
+  const [savedGoogleAccounts, setSavedGoogleAccounts] = useState<BrowserSocialAccount[]>([]);
+  const [googleMode, setGoogleMode] = useState<'picker' | 'input'>('input');
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
 
-  // Apple Login State
+  // Apple Browser Accounts - Only accounts that THIS person has saved on THIS browser
+  const [savedAppleAccounts, setSavedAppleAccounts] = useState<BrowserSocialAccount[]>([]);
+  const [appleMode, setAppleMode] = useState<'picker' | 'input'>('input');
+  const [appleEmail, setAppleEmail] = useState('');
+  const [appleName, setAppleName] = useState('');
   const [appleOption, setAppleOption] = useState<'share' | 'hide'>('share');
-  const [appleName, setAppleName] = useState('Usuario Apple');
+
+  // Load browser-specific accounts on mount
+  useEffect(() => {
+    try {
+      const gAccounts = localStorage.getItem('talma_browser_google_accounts');
+      if (gAccounts) {
+        const parsed = JSON.parse(gAccounts);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSavedGoogleAccounts(parsed);
+          setGoogleMode('picker');
+        }
+      }
+
+      const aAccounts = localStorage.getItem('talma_browser_apple_accounts');
+      if (aAccounts) {
+        const parsed = JSON.parse(aAccounts);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSavedAppleAccounts(parsed);
+          setAppleMode('picker');
+        }
+      }
+
+      const savedPhone = localStorage.getItem('talma_browser_phone');
+      if (savedPhone) {
+        const parsed = JSON.parse(savedPhone);
+        if (parsed.phone) {
+          setPhoneNumber(parsed.phone);
+          if (parsed.country) setSelectedCountry(parsed.country);
+        }
+      }
+    } catch {
+      // Clean fallback
+    }
+  }, []);
+
+  const saveGoogleAccountToBrowser = (acc: BrowserSocialAccount) => {
+    try {
+      const filtered = savedGoogleAccounts.filter(
+        (a) => a.email.toLowerCase() !== acc.email.toLowerCase()
+      );
+      const updated = [acc, ...filtered].slice(0, 5);
+      setSavedGoogleAccounts(updated);
+      localStorage.setItem('talma_browser_google_accounts', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const removeGoogleAccountFromBrowser = (email: string) => {
+    try {
+      const updated = savedGoogleAccounts.filter((a) => a.email.toLowerCase() !== email.toLowerCase());
+      setSavedGoogleAccounts(updated);
+      localStorage.setItem('talma_browser_google_accounts', JSON.stringify(updated));
+      if (updated.length === 0) {
+        setGoogleMode('input');
+      }
+    } catch {}
+  };
+
+  const saveAppleAccountToBrowser = (acc: BrowserSocialAccount) => {
+    try {
+      const filtered = savedAppleAccounts.filter(
+        (a) => a.email.toLowerCase() !== acc.email.toLowerCase()
+      );
+      const updated = [acc, ...filtered].slice(0, 5);
+      setSavedAppleAccounts(updated);
+      localStorage.setItem('talma_browser_apple_accounts', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const removeAppleAccountFromBrowser = (email: string) => {
+    try {
+      const updated = savedAppleAccounts.filter((a) => a.email.toLowerCase() !== email.toLowerCase());
+      setSavedAppleAccounts(updated);
+      localStorage.setItem('talma_browser_apple_accounts', JSON.stringify(updated));
+      if (updated.length === 0) {
+        setAppleMode('input');
+      }
+    } catch {}
+  };
 
   // Handle standard password step submission
   const handleNextStep = (e: React.FormEvent) => {
@@ -128,6 +211,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
         name: 'Usuario (' + phoneNumber.trim().slice(-4) + ')',
       });
 
+      // Save phone preference to this browser
+      try {
+        localStorage.setItem(
+          'talma_browser_phone',
+          JSON.stringify({ phone: phoneNumber.trim(), country: selectedCountry })
+        );
+      } catch {}
+
       onLoginSuccess(data.user);
       onClose();
     } catch (err: any) {
@@ -138,8 +229,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
   };
 
   // Handle Social Login (Google / Apple)
-  const handlePerformSocial = async (provider: 'google' | 'apple', email: string, name?: string) => {
-    if (!email || !email.includes('@')) {
+  const handlePerformSocial = async (
+    provider: 'google' | 'apple',
+    email: string,
+    name?: string
+  ) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Ingresa un correo electrónico válido');
       return;
     }
@@ -148,11 +244,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
     setError(null);
 
     try {
+      const displayName = name?.trim() || cleanEmail.split('@')[0];
       const data = await socialLogin({
         provider,
-        email: email.trim().toLowerCase(),
-        name: name?.trim() || (provider === 'google' ? 'Usuario Google' : 'Usuario Apple'),
+        email: cleanEmail,
+        name: displayName,
       });
+
+      // Remember in THIS user's browser only
+      if (provider === 'google') {
+        saveGoogleAccountToBrowser({
+          email: cleanEmail,
+          name: displayName,
+        });
+      } else {
+        saveAppleAccountToBrowser({
+          email: cleanEmail,
+          name: displayName,
+        });
+      }
 
       onLoginSuccess(data.user);
       onClose();
@@ -348,11 +458,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
           </form>
         )}
 
-        {/* PASO 3: TELÉFONO - INGRESO DE NÚMERO */}
+        {/* PASO 3: TELÉFONO - INGRESO LIMPIO DE NÚMERO */}
         {step === 'phone' && (
           <form onSubmit={handleSendPhoneOtp} className="flex flex-col gap-4 animate-fade-in">
             <p className="text-xs text-[#71767b]">
-              Ingresa tu número de teléfono móvil. Te enviaremos un código SMS de verificación para acceder a tu cuenta.
+              Ingresa tu número de teléfono móvil para recibir un código de verificación SMS en tu dispositivo.
             </p>
 
             <div className="flex gap-2">
@@ -375,7 +485,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
                   autoFocus
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="987 654 321"
+                  placeholder="Número de teléfono"
                   className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
                 />
               </div>
@@ -403,7 +513,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
               Enviamos un código de verificación al <span className="text-white font-bold">{selectedCountry} {phoneNumber}</span>.
             </p>
 
-            {/* Simulación en tiempo real del código SMS */}
+            {/* Simulación en tiempo real del código SMS para facilitar la prueba */}
             <div className="p-3 bg-[#1d9bf0]/10 border border-[#1d9bf0]/30 rounded-xl text-xs text-[#1d9bf0] flex items-center justify-between">
               <span>Código SMS recibido: <strong className="text-white text-sm tracking-widest">{demoCode}</strong></span>
               <button
@@ -444,140 +554,281 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLoginSuccess, o
           </form>
         )}
 
-        {/* PASO 5: SELECTOR DE CUENTA GOOGLE */}
+        {/* PASO 5: GOOGLE - LIMPIO Y BASADO EN CUENTAS DE ESTE NAVEGADOR */}
         {step === 'google' && (
           <div className="flex flex-col gap-4 animate-fade-in">
-            <p className="text-xs text-[#71767b]">
-              Elige una cuenta de Google para iniciar sesión en Talma:
-            </p>
+            {googleMode === 'picker' && savedGoogleAccounts.length > 0 ? (
+              <>
+                <p className="text-xs text-[#71767b]">
+                  Elige una cuenta de Google guardada en este navegador:
+                </p>
 
-            <div className="flex flex-col divide-y divide-[#2f3336]/60 border border-[#2f3336] rounded-xl overflow-hidden">
-              {DEFAULT_GOOGLE_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.email}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handlePerformSocial('google', acc.email, acc.name)}
-                  className="p-3.5 flex items-center gap-3.5 hover:bg-white/5 transition-colors text-left w-full cursor-pointer disabled:opacity-50"
-                >
-                  <div className={'w-9 h-9 rounded-full ' + acc.bg + ' text-white font-black text-sm flex items-center justify-center shrink-0'}>
-                    {acc.initial}
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-bold text-white text-sm truncate">{acc.name}</span>
-                    <span className="text-xs text-[#71767b] truncate">{acc.email}</span>
-                  </div>
-                </button>
-              ))}
+                <div className="flex flex-col divide-y divide-[#2f3336]/60 border border-[#2f3336] rounded-xl overflow-hidden">
+                  {savedGoogleAccounts.map((acc) => (
+                    <div
+                      key={acc.email}
+                      className="flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors group"
+                    >
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handlePerformSocial('google', acc.email, acc.name)}
+                        className="flex items-center gap-3.5 text-left flex-1 min-w-0 cursor-pointer disabled:opacity-50"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-[#1d9bf0]/20 text-[#1d9bf0] font-black text-sm flex items-center justify-center shrink-0 border border-[#1d9bf0]/40">
+                          {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="font-bold text-white text-sm truncate">{acc.name || acc.email}</span>
+                          <span className="text-xs text-[#71767b] truncate">{acc.email}</span>
+                        </div>
+                      </button>
 
-              <button
-                type="button"
-                onClick={() => setShowCustomGoogle(!showCustomGoogle)}
-                className="p-3.5 text-xs text-[#1d9bf0] hover:bg-white/5 font-bold transition-colors text-center w-full cursor-pointer"
-              >
-                {showCustomGoogle ? 'Ocultar formulario' : 'Usar otra cuenta de Google...'}
-              </button>
-            </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeGoogleAccountFromBrowser(acc.email);
+                        }}
+                        title="Quitar de este navegador"
+                        className="p-1.5 text-[#71767b] hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors ml-2 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
 
-            {showCustomGoogle && (
+                  <button
+                    type="button"
+                    onClick={() => setGoogleMode('input')}
+                    className="p-3.5 text-xs text-[#1d9bf0] hover:bg-white/5 font-bold transition-colors text-center w-full cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Usar otra cuenta de Google</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Modo limpio directo para ingresar cuenta de Google */
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  handlePerformSocial('google', customGoogleEmail, customGoogleName);
+                  handlePerformSocial('google', googleEmail, googleName);
                 }}
-                className="flex flex-col gap-3 pt-1 border-t border-[#2f3336]/40"
+                className="flex flex-col gap-3.5"
               >
-                <input
-                  type="text"
-                  required
-                  value={customGoogleName}
-                  onChange={(e) => setCustomGoogleName(e.target.value)}
-                  placeholder="Tu nombre completo"
-                  className="p-3 bg-black border border-[#2f3336] focus:border-[#1d9bf0] rounded-xl text-white outline-none text-xs"
-                />
-                <input
-                  type="email"
-                  required
-                  value={customGoogleEmail}
-                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                  placeholder="nombre@gmail.com"
-                  className="p-3 bg-black border border-[#2f3336] focus:border-[#1d9bf0] rounded-xl text-white outline-none text-xs"
-                />
+                <p className="text-xs text-[#71767b]">
+                  Ingresa tu cuenta de Google para iniciar sesión en Talma:
+                </p>
+
+                <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    value={googleEmail}
+                    onChange={(e) => setGoogleEmail(e.target.value)}
+                    placeholder="Correo de Google (ej. tu_cuenta@gmail.com)"
+                    className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+                  />
+                </div>
+
+                <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+                  <input
+                    type="text"
+                    value={googleName}
+                    onChange={(e) => setGoogleName(e.target.value)}
+                    placeholder="Nombre completo (opcional)"
+                    className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  disabled={!customGoogleEmail.trim() || loading}
-                  className="py-2.5 bg-white text-black font-bold rounded-full text-xs hover:bg-[#e6e6e6] cursor-pointer transition-colors"
+                  disabled={!googleEmail.trim() || loading}
+                  className={
+                    'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                    (!googleEmail.trim() || loading
+                      ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
+                      : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+                  }
                 >
-                  Acceder con esta cuenta
+                  {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+                  <span>Continuar con Google</span>
                 </button>
+
+                {savedGoogleAccounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setGoogleMode('picker')}
+                    className="text-xs text-[#1d9bf0] hover:underline font-bold text-center cursor-pointer mt-1"
+                  >
+                    Volver a cuentas guardadas en este navegador
+                  </button>
+                )}
               </form>
             )}
           </div>
         )}
 
-        {/* PASO 6: INICIAR SESIÓN CON APPLE ID */}
+        {/* PASO 6: APPLE ID - LIMPIO Y BASADO EN CUENTAS DE ESTE NAVEGADOR */}
         {step === 'apple' && (
           <div className="flex flex-col gap-4 animate-fade-in">
-            <p className="text-xs text-[#71767b]">
-              Talma configurará tu cuenta de forma privada mediante tu Apple ID:
-            </p>
+            {appleMode === 'picker' && savedAppleAccounts.length > 0 ? (
+              <>
+                <p className="text-xs text-[#71767b]">
+                  Elige un Apple ID guardado en este navegador:
+                </p>
 
-            <div className="flex flex-col gap-2.5 border border-[#2f3336] rounded-xl p-3 bg-[#16181c]/40 text-xs">
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/5">
-                <input
-                  type="radio"
-                  name="appleOption"
-                  checked={appleOption === 'share'}
-                  onChange={() => setAppleOption('share')}
-                  className="accent-white"
-                />
-                <div className="flex flex-col">
-                  <span className="font-bold text-white">Compartir mi correo electrónico</span>
-                  <span className="text-[11px] text-[#71767b]">usuario.apple@icloud.com</span>
+                <div className="flex flex-col divide-y divide-[#2f3336]/60 border border-[#2f3336] rounded-xl overflow-hidden">
+                  {savedAppleAccounts.map((acc) => (
+                    <div
+                      key={acc.email}
+                      className="flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors group"
+                    >
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handlePerformSocial('apple', acc.email, acc.name)}
+                        className="flex items-center gap-3.5 text-left flex-1 min-w-0 cursor-pointer disabled:opacity-50"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-white/10 text-white font-black text-sm flex items-center justify-center shrink-0 border border-white/20">
+                          {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="font-bold text-white text-sm truncate">{acc.name || acc.email}</span>
+                          <span className="text-xs text-[#71767b] truncate">{acc.email}</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeAppleAccountFromBrowser(acc.email);
+                        }}
+                        title="Quitar de este navegador"
+                        className="p-1.5 text-[#71767b] hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors ml-2 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setAppleMode('input')}
+                    className="p-3.5 text-xs text-[#1d9bf0] hover:bg-white/5 font-bold transition-colors text-center w-full cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Usar otro ID de Apple</span>
+                  </button>
                 </div>
-              </label>
+              </>
+            ) : (
+              /* Modo limpio directo para ingresar Apple ID */
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const cleanPrefix = appleEmail.trim().split('@')[0].replace(/[^a-z0-9_]/g, '');
+                  const resolvedEmail =
+                    appleOption === 'share'
+                      ? appleEmail.trim()
+                      : cleanPrefix + '.relay@privaterelay.appleid.com';
+                  handlePerformSocial('apple', resolvedEmail, appleName);
+                }}
+                className="flex flex-col gap-3.5"
+              >
+                <p className="text-xs text-[#71767b]">
+                  Ingresa tu ID de Apple para configurar tu acceso:
+                </p>
 
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/5">
-                <input
-                  type="radio"
-                  name="appleOption"
-                  checked={appleOption === 'hide'}
-                  onChange={() => setAppleOption('hide')}
-                  className="accent-white"
-                />
-                <div className="flex flex-col">
-                  <span className="font-bold text-white">Ocultar mi correo</span>
-                  <span className="text-[11px] text-[#71767b]">usuario-talma@privaterelay.appleid.com</span>
+                <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    value={appleEmail}
+                    onChange={(e) => setAppleEmail(e.target.value)}
+                    placeholder="ID de Apple (correo electrónico)"
+                    className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+                  />
                 </div>
-              </label>
-            </div>
 
-            <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
-              <input
-                type="text"
-                value={appleName}
-                onChange={(e) => setAppleName(e.target.value)}
-                placeholder="Nombre para mostrar"
-                className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
-              />
-            </div>
+                <div className="border border-[#2f3336] focus-within:border-[#1d9bf0] rounded-md px-3.5 py-3 transition-colors bg-black">
+                  <input
+                    type="text"
+                    value={appleName}
+                    onChange={(e) => setAppleName(e.target.value)}
+                    placeholder="Nombre para mostrar (opcional)"
+                    className="w-full bg-transparent text-white outline-none text-[15px] placeholder-[#71767b]"
+                  />
+                </div>
 
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                const email = appleOption === 'share' ? 'usuario.apple@icloud.com' : 'usuario-talma@privaterelay.appleid.com';
-                handlePerformSocial('apple', email, appleName);
-              }}
-              className="w-full bg-white hover:bg-[#e6e6e6] text-black font-bold py-3 rounded-full text-[15px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50 select-none shadow-sm"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
-              <span>Continuar con Apple ID</span>
-            </button>
+                {/* Opciones de privacidad de Apple ID */}
+                <div className="flex flex-col gap-2 border border-[#2f3336] rounded-xl p-3 bg-[#16181c]/40 text-xs">
+                  <label className="flex items-center gap-3 cursor-pointer p-1.5 rounded-lg hover:bg-white/5">
+                    <input
+                      type="radio"
+                      name="appleOption"
+                      checked={appleOption === 'share'}
+                      onChange={() => setAppleOption('share')}
+                      className="accent-white cursor-pointer"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-white">Compartir mi correo electrónico</span>
+                      <span className="text-[11px] text-[#71767b]">
+                        {appleEmail.trim() || 'tu_correo@icloud.com'}
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer p-1.5 rounded-lg hover:bg-white/5">
+                    <input
+                      type="radio"
+                      name="appleOption"
+                      checked={appleOption === 'hide'}
+                      onChange={() => setAppleOption('hide')}
+                      className="accent-white cursor-pointer"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-white">Ocultar mi correo</span>
+                      <span className="text-[11px] text-[#71767b]">
+                        {(appleEmail.trim().split('@')[0] || 'usuario') + '.relay@privaterelay.appleid.com'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!appleEmail.trim() || loading}
+                  className={
+                    'w-full font-bold py-3 rounded-full text-[15px] transition-all flex items-center justify-center gap-2 ' +
+                    (!appleEmail.trim() || loading
+                      ? 'bg-[#333639] text-[#71767b] cursor-not-allowed'
+                      : 'bg-white hover:bg-[#e6e6e6] text-black cursor-pointer active:scale-[0.98]')
+                  }
+                >
+                  {loading && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+                  <span>Continuar con Apple ID</span>
+                </button>
+
+                {savedAppleAccounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAppleMode('picker')}
+                    className="text-xs text-[#1d9bf0] hover:underline font-bold text-center cursor-pointer mt-1"
+                  >
+                    Volver a cuentas guardadas en este navegador
+                  </button>
+                )}
+              </form>
+            )}
           </div>
         )}
 
-        {/* Footer text matching image m02127 */}
+        {/* Footer text */}
         <p className="text-[12px] text-[#71767b] leading-relaxed text-center mt-6 px-1">
           Al continuar, aceptas nuestros{' '}
           <span className="text-white hover:underline cursor-pointer">Términos de servicio</span>,{' '}
